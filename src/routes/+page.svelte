@@ -1,131 +1,285 @@
 <script lang="ts">
-	import 'maplibre-gl/dist/maplibre-gl.css';
-	import type { LngLatLike } from 'maplibre-gl';
-	import {
-		CircleLayer,
-		CustomControl,
-		GeoJSONSource,
-		GlobeControl,
-		MapLibre,
-		Marker,
-		NavigationControl,
-		Popup,
-		ScaleControl
-	} from '$lib/index.js';
+	import { resolve } from '$app/paths';
+	import CodeBlock from '../docs/ui/CodeBlock.svelte';
+	import BasicMap from '../docs/demos/BasicMap.svelte';
+	import { COMPONENTS, COMPONENTS_BY_CATEGORY } from '../docs/registry.js';
 
-	let center = $state<LngLatLike>([2.1734, 41.3851]);
-	let zoom = $state(4);
-	let markerAt = $state<LngLatLike>([2.1734, 41.3851]);
-	let radius = $state(6);
+	const install = `npm install maplibrex-svelte maplibre-gl`;
 
-	const capitals = {
-		type: 'FeatureCollection' as const,
-		features: [
-			{ name: 'Madrid', coordinates: [-3.7038, 40.4168] },
-			{ name: 'Lisbon', coordinates: [-9.1393, 38.7223] },
-			{ name: 'Paris', coordinates: [2.3522, 48.8566] },
-			{ name: 'Rome', coordinates: [12.4964, 41.9028] },
-			{ name: 'Berlin', coordinates: [13.405, 52.52] }
-		].map((city) => ({
-			type: 'Feature' as const,
-			properties: { name: city.name },
-			geometry: { type: 'Point' as const, coordinates: city.coordinates }
-		}))
-	};
+	// Split so the literal never contains a real closing script tag, which the
+	// Svelte parser would treat as the end of this block.
+	const CLOSE_SCRIPT = '<' + '/script>';
+
+	const quickStart = `<script lang="ts">
+  import 'maplibre-gl/dist/maplibre-gl.css';
+  import { MapLibre, NavigationControl, GeoJSONSource, CircleLayer } from 'maplibrex-svelte';
+
+  let zoom = $state(4);
+${CLOSE_SCRIPT}
+
+<div style="height: 400px">
+  <MapLibre mapStyle={styleUrl} center={[2.17, 41.38]} bind:zoom>
+    <NavigationControl />
+
+    <GeoJSONSource id="cities" data={cities}>
+      <CircleLayer id="cities-dots" paint={{ 'circle-radius': 6 }} />
+    </GeoJSONSource>
+  </MapLibre>
+</div>`;
+
+	const principles = [
+		{
+			title: 'The component tree is the style tree',
+			body: 'A layer nested inside a source inherits its id. Nesting is the wiring — and it makes teardown order correct for free, because Svelte destroys children before parents, exactly as MapLibre requires.'
+		},
+		{
+			title: 'Updates are surgical, never destructive',
+			body: 'Changing one paint property calls setPaintProperty for that key. Changing GeoJSON calls setData. Recreation happens only where MapLibre exposes no setter, and the prop says so.'
+		},
+		{
+			title: 'Every event is a typed callback prop',
+			body: 'Props are derived from MapLibre’s own event maps, so handlers keep their exact payload type and a new upstream event needs no release here.'
+		},
+		{
+			title: 'Server rendering is safe',
+			body: 'Importing the library on the server is harmless. The map is constructed inside $effect, which never runs there.'
+		}
+	];
 </script>
 
-<main>
-	<header>
-		<h1>MapLibreX</h1>
-		<p>Svelte 5 components for MapLibre GL JS. Every panel below is driven by props.</p>
-	</header>
+<svelte:head>
+	<title>MapLibreX — Svelte 5 components for MapLibre GL JS</title>
+	<meta
+		name="description"
+		content="Component-oriented MapLibre GL JS bindings for Svelte 5, written in TypeScript."
+	/>
+</svelte:head>
 
-	<section class="map">
-		<MapLibre
-			mapStyle="https://demotiles.maplibre.org/style.json"
-			bind:center
-			bind:zoom
-			cameraMode="fly"
-		>
-			<NavigationControl position="top-right" />
-			<ScaleControl position="bottom-left" />
-			<GlobeControl position="top-right" />
+<section class="hero">
+	<p class="eyebrow">Svelte 5 · MapLibre GL JS 6 · TypeScript</p>
+	<h1>Describe the map as a component tree.</h1>
+	<p class="lede">
+		MapLibreX keeps that tree and the imperative MapLibre instance in agreement — adding, updating
+		in place, and tearing down in the right order.
+	</p>
 
-			<CustomControl position="top-left">
-				<button type="button" onclick={() => (zoom = 4)}>Reset zoom</button>
-			</CustomControl>
+	<div class="cta">
+		<a class="primary" href={resolve('/docs')}>Browse {COMPONENTS.length} components</a>
+		<a class="secondary" href={resolve('/playground')}>Open the playground</a>
+	</div>
 
-			<GeoJSONSource id="capitals" data={capitals}>
-				<CircleLayer
-					id="capitals-dots"
-					paint={{
-						'circle-radius': radius,
-						'circle-color': '#0f766e',
-						'circle-stroke-width': 2,
-						'circle-stroke-color': '#ffffff'
-					}}
-				/>
-			</GeoJSONSource>
+	<div class="install">
+		<CodeBlock code={install} language="sh" />
+	</div>
+</section>
 
-			<Marker bind:lngLat={markerAt} draggable color="#b91c1c">
-				<Popup>
-					<strong>Drag me</strong>
-				</Popup>
-			</Marker>
-		</MapLibre>
-	</section>
+<section class="demo-band">
+	<BasicMap />
+</section>
 
-	<section class="panel">
-		<label>
-			Circle radius
-			<input type="range" min="2" max="20" bind:value={radius} />
-			<output>{radius}px</output>
-		</label>
+<section class="split">
+	<div>
+		<h2>Quick start</h2>
+		<p>
+			Give the container a height, point at a style, and nest what you need. Everything below the
+			root reads the map from context.
+		</p>
+		<p class="fineprint">
+			<code>maplibre-gl</code> is a peer dependency: it is the library being wrapped, so you own its version.
+			Two copies in one bundle would mean two WebGL contexts.
+		</p>
+	</div>
+	<CodeBlock code={quickStart} />
+</section>
 
-		<dl>
-			<dt>Zoom</dt>
-			<dd>{zoom.toFixed(2)}</dd>
-			<dt>Marker</dt>
-			<dd>{JSON.stringify(markerAt)}</dd>
-		</dl>
-	</section>
-</main>
+<section>
+	<h2>Four decisions shape the whole API</h2>
+	<ul class="principles">
+		{#each principles as principle (principle.title)}
+			<li>
+				<h3>{principle.title}</h3>
+				<p>{principle.body}</p>
+			</li>
+		{/each}
+	</ul>
+</section>
+
+<section>
+	<h2>What is in the box</h2>
+	<ul class="counts">
+		{#each COMPONENTS_BY_CATEGORY as category (category.id)}
+			<li>
+				<strong>{category.components.length}</strong>
+				<span>{category.title}</span>
+			</li>
+		{/each}
+	</ul>
+	<p class="fineprint">
+		The surface is derived from the official MapLibre GL JS examples rather than invented. Each
+		component page lists the examples it covers.
+	</p>
+</section>
 
 <style>
-	main {
-		max-width: 60rem;
-		margin: 0 auto;
-		padding: 2rem 1rem;
-		font-family: system-ui, sans-serif;
+	section {
+		max-width: 64rem;
+		margin: 0 auto 4rem;
 	}
 
-	.map {
-		height: 28rem;
-		border-radius: 0.5rem;
-		overflow: hidden;
+	.hero {
+		padding-top: 2rem;
+		text-align: center;
 	}
 
-	.panel {
+	.eyebrow {
+		margin: 0 0 0.9rem;
+		font-size: 0.75rem;
+		font-weight: 640;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--accent);
+	}
+
+	h1 {
+		font-size: clamp(2.1rem, 1.3rem + 3.4vw, 3.4rem);
+		max-width: 20ch;
+		margin-inline: auto;
+	}
+
+	.lede {
+		max-width: 46rem;
+		margin: 1.1rem auto 0;
+		font-size: 1.15rem;
+		color: var(--text-muted);
+	}
+
+	.cta {
 		display: flex;
+		justify-content: center;
 		flex-wrap: wrap;
-		gap: 2rem;
-		align-items: center;
-		margin-top: 1.5rem;
+		gap: 0.75rem;
+		margin-top: 1.9rem;
 	}
 
-	dl {
+	.cta a {
+		padding: 0.6rem 1.2rem;
+		border-radius: var(--radius);
+		font-weight: 560;
+		border: 1px solid transparent;
+	}
+
+	.cta a:hover {
+		text-decoration: none;
+	}
+
+	.primary {
+		background: var(--accent);
+		color: var(--accent-contrast);
+	}
+
+	.primary:hover {
+		filter: brightness(1.08);
+	}
+
+	.secondary {
+		border-color: var(--border);
+		color: var(--text);
+	}
+
+	.secondary:hover {
+		border-color: var(--border-strong);
+	}
+
+	.install {
+		max-width: 32rem;
+		margin: 1.75rem auto 0;
+		text-align: left;
+	}
+
+	.demo-band {
+		margin-bottom: 4.5rem;
+	}
+
+	h2 {
+		font-size: 1.4rem;
+		margin-bottom: 0.6rem;
+	}
+
+	.split {
 		display: grid;
-		grid-template-columns: auto auto;
-		gap: 0.25rem 1rem;
-		margin: 0;
+		grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
+		gap: 2rem;
+		align-items: start;
 	}
 
-	dt {
-		font-weight: 600;
+	.split p {
+		color: var(--text-muted);
 	}
 
-	dd {
+	.fineprint {
+		font-size: 0.9rem;
+		color: var(--text-faint);
+	}
+
+	.principles {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+		gap: 1rem;
+		list-style: none;
+		margin: 1.25rem 0 0;
+		padding: 0;
+	}
+
+	.principles li {
+		padding: 1.1rem 1.2rem;
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		background: var(--bg-raised);
+	}
+
+	.principles h3 {
+		font-size: 1rem;
+		margin-bottom: 0.4rem;
+	}
+
+	.principles p {
 		margin: 0;
-		font-variant-numeric: tabular-nums;
+		color: var(--text-muted);
+		font-size: 0.93rem;
+	}
+
+	.counts {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+		gap: 0.75rem;
+		list-style: none;
+		margin: 1.25rem 0 1rem;
+		padding: 0;
+	}
+
+	.counts li {
+		padding: 0.9rem 1rem;
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		text-align: center;
+	}
+
+	.counts strong {
+		display: block;
+		font-size: 1.6rem;
+		font-weight: 620;
+		color: var(--accent);
+		line-height: 1.2;
+	}
+
+	.counts span {
+		font-size: 0.82rem;
+		color: var(--text-muted);
+	}
+
+	@media (max-width: 52rem) {
+		.split {
+			grid-template-columns: minmax(0, 1fr);
+		}
 	}
 </style>
