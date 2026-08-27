@@ -37,6 +37,28 @@ Import the upstream stylesheet once in your app — controls, markers, and popup
 import 'maplibre-gl/dist/maplibre-gl.css';
 ```
 
+## One Vite step you cannot skip
+
+MapLibre v6 loads its web worker from a URL it builds at runtime:
+
+```js
+new URL(`./${workerFileName}`, import.meta.url);
+```
+
+The template is dynamic, so no bundler can trace it. Vite never copies the worker beside the bundled chunk, and in a **production build** the request 404s. The failure is quiet and easy to misdiagnose: the map loads, the canvas appears, controls work — and every source renders as empty background, because nothing parses tiles or GeoJSON.
+
+Copy both worker files somewhere your app serves, keeping them **in the same directory** (the worker imports its sibling shared chunk by relative path), then point MapLibre at the copy before the first map is constructed:
+
+```ts
+import { setWorkerUrl } from 'maplibre-gl';
+
+setWorkerUrl('/maplibre/maplibre-gl-worker.mjs');
+```
+
+This repository does it with a small Vite plugin in `vite-plugins/maplibre-worker.ts` that reads both files out of `node_modules` at build time, so they cannot drift from the installed version. Copy it if you want the same behaviour.
+
+Two things that look like fixes but are not: emitting only the worker with a `?url` import leaves its shared chunk missing, and a bare side-effect import of your setup module is legal to tree-shake under a narrow `sideEffects` list — export a function and call it instead.
+
 ## Requirements
 
 |                |                                              |
@@ -224,6 +246,19 @@ The component surface is derived from the [official MapLibre GL JS examples](htt
 | `<GlobalState>`  | filter layer symbols using global state                                                |
 | `padding`        | offset the vanishing point using padding                                               |
 | `interactions`   | toggle interactions; disable rotation; disable scroll zoom                             |
+
+## Documentation site
+
+`npm run dev` serves a documentation site alongside the library: a page per component, generated from a single registry so a component cannot ship with a page that disagrees with it, plus nine live demos and a playground.
+
+| Route               | What it is                                                                      |
+| ------------------- | ------------------------------------------------------------------------------- |
+| `/`                 | Overview, install, and the design decisions                                     |
+| `/docs`             | Every component, grouped by what it does                                        |
+| `/docs/<component>` | Live demo, usage, props, gotchas, and the official examples it covers           |
+| `/playground`       | One map wired to a source, layers, feature state, overlays and controls at once |
+
+The site lives outside `src/lib`, so none of it reaches the published package.
 
 ## Development
 
