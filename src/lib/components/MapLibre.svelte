@@ -1,10 +1,21 @@
 <script lang="ts">
 	import { Map as MapLibreMap } from 'maplibre-gl';
-	import type { LngLatBoundsLike, LngLatLike, MapOptions, StyleSpecification } from 'maplibre-gl';
+	import type {
+		LngLatBoundsLike,
+		LngLatLike,
+		MapOptions,
+		PaddingOptions,
+		StyleSpecification
+	} from 'maplibre-gl';
 	import { untrack, type Snippet } from 'svelte';
 	import { setMapContext } from '../context.js';
 	import { sameLngLat, sameNumber } from '../internal/camera.js';
 	import { bindEvents } from '../internal/bind-events.svelte.js';
+	import {
+		planInteractionChanges,
+		readInteractionState,
+		type InteractionRequest
+	} from '../internal/interactions.js';
 	import type { CameraMode, MapEventProps } from '../types.js';
 
 	type Props = MapEventProps & {
@@ -23,6 +34,10 @@
 		pitch?: number;
 		/** Applied once on creation; use `map.fitBounds` afterwards. */
 		bounds?: LngLatBoundsLike;
+		/** Insets the viewport, which moves the vanishing point off centre. */
+		padding?: PaddingOptions;
+		/** Enables or disables gesture handlers at runtime. Omitted keys are left alone. */
+		interactions?: InteractionRequest;
 		/** How camera prop changes are applied. @defaultValue 'ease' */
 		cameraMode?: CameraMode;
 		/** Escape hatch for any `MapOptions` this component does not surface. */
@@ -43,6 +58,8 @@
 		bearing = $bindable(),
 		pitch = $bindable(),
 		bounds,
+		padding,
+		interactions,
 		cameraMode = 'ease',
 		options,
 		map = $bindable(null),
@@ -181,6 +198,35 @@
 			if (cameraMode === 'jump') instance.jumpTo(cameraOptions);
 			else if (cameraMode === 'fly') instance.flyTo(cameraOptions);
 			else instance.easeTo(cameraOptions);
+		});
+	});
+
+	$effect(() => {
+		const instance = map;
+		const next = padding;
+		if (!instance || next === undefined) return;
+
+		untrack(() => instance.setPadding(next));
+	});
+
+	// Gesture handlers are imperative objects rather than style state, so they
+	// are compared against their live enabled flag instead of a shadow copy.
+	$effect(() => {
+		const instance = map;
+		const requested = interactions;
+		if (!instance || !requested) return;
+
+		const changes = planInteractionChanges(readInteractionState(instance), requested);
+		if (changes.length === 0) return;
+
+		untrack(() => {
+			for (const [name, enabled] of changes) {
+				// The handlers share `enable`/`disable` but not their option types,
+				// so the union is widened at this single call site.
+				const handler = instance[name] as { enable(): void; disable(): void };
+				if (enabled) handler.enable();
+				else handler.disable();
+			}
 		});
 	});
 
