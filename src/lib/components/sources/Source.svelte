@@ -1,14 +1,14 @@
 <script lang="ts">
-	import type { GeoJSONSource, SourceSpecification } from 'maplibre-gl';
+	import type { GeoJSONSource } from 'maplibre-gl';
 	import { untrack, type Snippet } from 'svelte';
 	import { getMapContext, setSourceContext } from '../../context.js';
-	import { planSourceUpdate } from '../../internal/source.js';
+	import { planSourceUpdate, type AnySourceSpecification } from '../../internal/source.js';
 	import { removeLayersUsingSource, removeSourceIfPresent } from '../../internal/style-ops.js';
 
 	type Props = {
 		/** Unique within the style. Changing it recreates the source. */
 		id: string;
-		spec: SourceSpecification;
+		spec: AnySourceSpecification;
 		/** Layers nested here inherit this source id automatically. */
 		children?: Snippet<[{ id: string }]>;
 	};
@@ -19,7 +19,7 @@
 
 	let epoch = $state(0);
 	let mounted = $state(false);
-	let applied = $state<SourceSpecification | undefined>();
+	let applied = $state<AnySourceSpecification | undefined>();
 
 	setSourceContext({
 		get id() {

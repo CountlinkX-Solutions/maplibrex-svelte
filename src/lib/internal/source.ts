@@ -1,4 +1,10 @@
-import type { SourceSpecification } from 'maplibre-gl';
+import type { CanvasSourceSpecification, SourceSpecification } from 'maplibre-gl';
+
+/**
+ * Canvas sources sit outside the style specification union because they are
+ * runtime-only, but `map.addSource` accepts them all the same.
+ */
+export type AnySourceSpecification = SourceSpecification | CanvasSourceSpecification;
 import { deepEqual } from './deep-equal.js';
 
 export type SourceUpdatePlan =
@@ -16,8 +22,8 @@ export type SourceUpdatePlan =
  * because MapLibre exposes no setter for the remaining source options.
  */
 export function planSourceUpdate(
-	previous: SourceSpecification | undefined,
-	next: SourceSpecification
+	previous: AnySourceSpecification | undefined,
+	next: AnySourceSpecification
 ): SourceUpdatePlan {
 	if (previous === undefined) return { kind: 'create' };
 	if (previous.type !== next.type) return { kind: 'recreate' };
