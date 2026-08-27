@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import type { Plugin } from 'vite';
+import { MAPLIBRE_WORKER_DIR, WORKER_FILES } from './maplibre-worker-paths.js';
 
 /**
  * MapLibre v6 loads its worker from a URL it builds at runtime:
@@ -17,10 +18,6 @@ import type { Plugin } from 'vite';
  * Files are read from node_modules at build time rather than vendored into the
  * repository, so they cannot drift from the installed version.
  */
-const WORKER_FILES = ['maplibre-gl-worker.mjs', 'maplibre-gl-shared.mjs'] as const;
-
-export const MAPLIBRE_WORKER_PATH = '/maplibre/maplibre-gl-worker.mjs';
-
 export function maplibreWorker(): Plugin {
 	const require = createRequire(import.meta.url);
 	const distDir = dirname(require.resolve('maplibre-gl/dist/maplibre-gl.mjs'));
@@ -38,7 +35,9 @@ export function maplibreWorker(): Plugin {
 		configureServer(server) {
 			// Dev serves the same two paths, so the app code needs no branch.
 			server.middlewares.use((request, response, next) => {
-				const name = WORKER_FILES.find((file) => request.url?.startsWith(`/maplibre/${file}`));
+				const name = WORKER_FILES.find((file) =>
+					request.url?.startsWith(`${MAPLIBRE_WORKER_DIR}${file}`)
+				);
 				if (!name) return next();
 
 				response.setHeader('content-type', 'text/javascript');
@@ -50,7 +49,11 @@ export function maplibreWorker(): Plugin {
 			if (isServerBuild) return;
 
 			for (const name of WORKER_FILES) {
-				this.emitFile({ type: 'asset', fileName: `maplibre/${name}`, source: read(name) });
+				this.emitFile({
+					type: 'asset',
+					fileName: `${MAPLIBRE_WORKER_DIR.slice(1)}${name}`,
+					source: read(name)
+				});
 			}
 		}
 	};

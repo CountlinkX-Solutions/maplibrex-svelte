@@ -1,6 +1,6 @@
 import { setWorkerUrl } from 'maplibre-gl';
 import { base } from '$app/paths';
-import { MAPLIBRE_WORKER_PATH } from '../../vite-plugins/maplibre-worker.js';
+import { MAPLIBRE_WORKER_PATH } from '../../vite-plugins/maplibre-worker-paths.js';
 
 let configured = false;
 
