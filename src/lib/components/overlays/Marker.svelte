@@ -12,18 +12,27 @@
 		Omit<MarkerOptions, 'element'> & {
 			/** Two-way while `draggable`: the drag writes the new position back. */
 			lngLat: LngLatLike;
-			/** Applied to the custom element wrapper when `children` is used. */
+			/** Applied to the custom element wrapper when `content` is given. */
 			class?: string;
 			/** Read-only binding to the underlying marker. */
 			marker?: MapLibreMarker | null;
-			/** Replaces the default pin with your own markup. */
-			children?: Snippet<[{ marker: MapLibreMarker }]>;
+			/**
+			 * Replaces the default pin with your own markup. Only this snippet
+			 * becomes the marker element.
+			 */
+			content?: Snippet<[{ marker: MapLibreMarker }]>;
+			/**
+			 * Components that attach to this marker, such as a nested `<Popup>`.
+			 * They render no marker DOM, so the default pin survives.
+			 */
+			children?: Snippet;
 		};
 
 	let {
 		lngLat = $bindable(),
 		class: className,
 		marker = $bindable(null),
+		content,
 		children,
 		offset,
 		draggable,
@@ -49,8 +58,12 @@
 	});
 	const recreateKey = $derived(stableKey(constructorOnly));
 
-	let content = $state<HTMLDivElement | null>(null);
-	const usesCustomElement = $derived(children !== undefined);
+	let contentNode = $state<HTMLDivElement | null>(null);
+
+	// Decided by the `content` snippet alone. Keying this on `children` made a
+	// nested <Popup> count as marker markup, which replaced the default pin with
+	// an empty element and produced an invisible 0x0 marker.
+	const usesCustomElement = $derived(content !== undefined);
 
 	setMarkerContext({
 		get marker() {
@@ -60,7 +73,7 @@
 
 	$effect(() => {
 		const map = context.map;
-		const element = content;
+		const element = contentNode;
 		void recreateKey;
 
 		if (!map) return;
@@ -178,10 +191,14 @@
 
 {#if usesCustomElement}
 	<div style="display: none" aria-hidden="true">
-		<div bind:this={content} class={className}>
+		<div bind:this={contentNode} class={className}>
 			{#if marker}
-				{@render children?.({ marker })}
+				{@render content?.({ marker })}
 			{/if}
 		</div>
 	</div>
+{/if}
+
+{#if marker}
+	{@render children?.()}
 {/if}
