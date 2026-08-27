@@ -24,9 +24,11 @@ export { default as ImageSource } from './components/sources/ImageSource.svelte'
 export { default as RasterDEMSource } from './components/sources/RasterDEMSource.svelte';
 export { default as RasterSource } from './components/sources/RasterSource.svelte';
 export { default as VectorSource } from './components/sources/VectorSource.svelte';
+export { default as CanvasSource } from './components/sources/CanvasSource.svelte';
 export { default as VideoSource } from './components/sources/VideoSource.svelte';
 
 export { default as Layer } from './components/layers/Layer.svelte';
+export { default as CustomLayer } from './components/layers/CustomLayer.svelte';
 export { default as BackgroundLayer } from './components/layers/BackgroundLayer.svelte';
 export { default as CircleLayer } from './components/layers/CircleLayer.svelte';
 export { default as ColorReliefLayer } from './components/layers/ColorReliefLayer.svelte';
@@ -41,6 +43,16 @@ export { default as SymbolLayer } from './components/layers/SymbolLayer.svelte';
 export { default as Marker } from './components/overlays/Marker.svelte';
 export { default as Popup } from './components/overlays/Popup.svelte';
 
+export { default as GlobalState } from './components/style/GlobalState.svelte';
+export { default as Image } from './components/style/Image.svelte';
+export { default as Light } from './components/style/Light.svelte';
+export { default as Projection } from './components/style/Projection.svelte';
+export { default as Sky } from './components/style/Sky.svelte';
+export { default as Terrain } from './components/style/Terrain.svelte';
+
+export { default as FeatureState } from './components/data/FeatureState.svelte';
+export { default as Protocol } from './components/data/Protocol.svelte';
+
 export {
 	getMapContext,
 	getMarkerContext,
@@ -50,6 +62,9 @@ export {
 	setSourceContext
 } from './context.js';
 export type { MapContext, MarkerContext, SourceContext } from './context.js';
+
+export type { InteractionName, InteractionRequest } from './internal/interactions.js';
+export type { AnySourceSpecification } from './internal/source.js';
 
 export type {
 	CameraMode,
@@ -64,12 +79,20 @@ export type {
  * on the underlying package.
  */
 export type {
+	CustomLayerInterface,
 	FilterSpecification,
 	LayerSpecification,
+	LightSpecification,
 	LngLatBoundsLike,
 	LngLatLike,
 	Map as MapLibreMap,
 	MapOptions,
+	PaddingOptions,
+	ProjectionSpecification,
+	SkySpecification,
 	SourceSpecification,
-	StyleSpecification
+	StyleImageMetadata,
+	StyleImageSource,
+	StyleSpecification,
+	TerrainSpecification
 } from 'maplibre-gl';
