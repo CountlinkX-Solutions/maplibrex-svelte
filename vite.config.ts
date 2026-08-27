@@ -2,6 +2,7 @@ import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
 import adapter from '@sveltejs/adapter-auto';
 import { sveltekit } from '@sveltejs/kit/vite';
+import { maplibreWorker } from './vite-plugins/maplibre-worker.js';
 
 export default defineConfig({
 	// MapLibre ships its worker as a separate ESM entry that the dependency
@@ -10,6 +11,7 @@ export default defineConfig({
 		exclude: ['maplibre-gl']
 	},
 	plugins: [
+		maplibreWorker(),
 		sveltekit({
 			compilerOptions: {
 				// Force runes mode for the project, except for libraries. Can be removed in svelte 6.
