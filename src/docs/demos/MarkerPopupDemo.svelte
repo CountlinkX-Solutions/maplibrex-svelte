@@ -22,10 +22,12 @@
 		</Marker>
 
 		<Marker lngLat={[12.4964, 41.9028]}>
-			<div class="chip">Custom markup</div>
+			{#snippet content()}
+				<div class="chip">Custom markup</div>
+			{/snippet}
 		</Marker>
 
-		<Popup lngLat={[13.405, 52.52]} bind:open={noteOpen} closeOnClick={false}>
+		<Popup lngLat={[2.3522, 48.8566]} bind:open={noteOpen} closeOnClick={false}>
 			<strong>Standalone</strong>
 			<p>Driven by the open prop.</p>
 		</Popup>

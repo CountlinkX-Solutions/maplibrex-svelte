@@ -1,9 +1,36 @@
+import type { StyleSpecification } from 'maplibre-gl';
 import type { FeatureCollection, Point, Polygon } from 'geojson';
 
 export const DEMO_STYLE = 'https://demotiles.maplibre.org/style.json';
 
-/** MapLibre's own public terrain tiles, so the demo needs no API key. */
-export const TERRAIN_TILES = 'https://demotiles.maplibre.org/terrain-tiles/tiles.json';
+/**
+ * The elevation source MapLibre's own 3D terrain example uses. The older
+ * demotiles terrain endpoint covers roughly one degree square and 404s
+ * everywhere else, which renders as flat ground rather than an error.
+ *
+ * Its TileJSON declares the encoding, so the component must not override it:
+ * decoding terrain-rgb data as terrarium produces plausible-looking nonsense.
+ */
+export const TERRAIN_TILEJSON = 'https://tiles.mapterhorn.com/tilejson.json';
+
+/**
+ * Terrain needs a basemap with detail at the zoom you are looking from. The
+ * demo vector style is a world countries map: draped over real relief it is a
+ * flat green field, which reads as broken terrain rather than a coarse basemap.
+ */
+export const OSM_STYLE: StyleSpecification = {
+	version: 8,
+	sources: {
+		osm: {
+			type: 'raster',
+			tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'],
+			tileSize: 256,
+			maxzoom: 19,
+			attribution: '© OpenStreetMap contributors'
+		}
+	},
+	layers: [{ id: 'osm', type: 'raster', source: 'osm' }]
+};
 
 export const CITIES: FeatureCollection<Point, { name: string; population: number }> = {
 	type: 'FeatureCollection',

@@ -915,10 +915,18 @@ export const COMPONENTS: ComponentDoc[] = [
 		name: 'Marker',
 		category: 'overlays',
 		summary: 'Anchors a pin, or your own markup, to a coordinate.',
-		usage: `<Marker bind:lngLat={position} draggable color="#b91c1c">
+		usage: `<!-- Default pin. A nested Popup attaches to it and leaves the pin alone. -->
+<Marker bind:lngLat={position} draggable color="#b91c1c">
   <Popup>
     <strong>Drag me</strong>
   </Popup>
+</Marker>
+
+<!-- Your own markup instead of the pin. -->
+<Marker lngLat={position}>
+  {#snippet content()}
+    <div class="chip">Custom</div>
+  {/snippet}
 </Marker>`,
 		props: [
 			{
@@ -949,9 +957,16 @@ export const COMPONENTS: ComponentDoc[] = [
 			{ name: 'rotation', type: 'number', description: 'Rotation in degrees.' },
 			{ name: 'opacity', type: 'string | number', description: 'Marker opacity.' },
 			{
-				name: 'children',
+				name: 'content',
 				type: 'Snippet<[{ marker: Marker }]>',
-				description: 'Replaces the default pin with your own markup.'
+				description:
+					'Replaces the default pin with your own markup. Only this becomes the marker element.'
+			},
+			{
+				name: 'children',
+				type: 'Snippet',
+				description:
+					'Components that attach to this marker, such as a nested Popup. They render no marker DOM.'
 			},
 			{
 				name: 'on<event>',
@@ -961,6 +976,7 @@ export const COMPONENTS: ComponentDoc[] = [
 		],
 		bindings: ['lngLat', 'marker'],
 		notes: [
+			'Only the content snippet replaces the pin. Nesting a Popup leaves the default pin intact — deciding this from children instead once produced an invisible 0x0 marker for exactly the documented pattern.',
 			'With draggable, bind:lngLat reflects the drag as it happens.',
 			'Markers are DOM, not WebGL. Hundreds are fine; thousands are not — use a CircleLayer or SymbolLayer instead.'
 		],
@@ -1064,7 +1080,9 @@ export const COMPONENTS: ComponentDoc[] = [
 		],
 		notes: [
 			'Unmounting restores whatever the style itself declared, so mounting this inside an {#if} is a safe on/off switch.',
-			'Terrain needs pitch to be visible. A flat top-down map looks identical with it on or off.'
+			'Terrain needs pitch to be visible. A flat top-down map looks identical with it on or off.',
+			'Let the TileJSON declare the encoding when it can. Decoding terrain-rgb data as terrarium does not fail — it produces plausible-looking nonsense.',
+			'Terrain also needs a basemap with detail at your zoom. Draped over a world-countries style it renders as a flat coloured field, which reads as broken terrain.'
 		],
 		examples: ['3D Terrain', 'Add 3D terrain from quantized-mesh tiles', 'Sky, Fog, Terrain'],
 		demo: 'terrain'

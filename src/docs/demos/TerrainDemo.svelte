@@ -1,27 +1,28 @@
 <script lang="ts">
 	import { MapLibre, NavigationControl, RasterDEMSource, Sky, Terrain } from '$lib/index.js';
 	import DemoFrame from '../ui/DemoFrame.svelte';
-	import { DEMO_STYLE, TERRAIN_TILES } from './data.js';
+	import { OSM_STYLE, TERRAIN_TILEJSON } from './data.js';
 
-	let exaggeration = $state(1.6);
+	let exaggeration = $state(1.4);
 	let on = $state(true);
 </script>
 
 <DemoFrame
 	title="Terrain and sky"
-	caption="Both need pitch to be visible: straight down there is no relief to shade and no horizon to paint. Elevation tiles come from MapLibre's public demo endpoint."
+	caption="Both need pitch to be visible: straight down there is no relief to shade and no horizon to paint. Uncheck to see the same view flatten."
 >
 	<MapLibre
-		mapStyle={DEMO_STYLE}
-		center={[11.39, 47.27]}
-		zoom={11}
-		pitch={70}
-		bearing={40}
-		options={{ maxPitch: 85 }}
+		mapStyle={OSM_STYLE}
+		center={[11.39085, 47.27574]}
+		zoom={11.2}
+		pitch={78}
+		options={{ maxPitch: 85, maxZoom: 18 }}
 	>
 		<NavigationControl visualizePitch />
 
-		<RasterDEMSource id="demo-dem" url={TERRAIN_TILES} encoding="terrarium">
+		<!-- No encoding prop: the TileJSON declares it, and overriding it wrong
+		     decodes the elevation into nonsense rather than failing loudly. -->
+		<RasterDEMSource id="demo-dem" url={TERRAIN_TILEJSON}>
 			{#if on}
 				<Terrain {exaggeration} />
 			{/if}

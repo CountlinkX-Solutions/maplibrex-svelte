@@ -136,7 +136,15 @@ Layer-scoped events are typed:
 
 ### Overlays
 
-`<Marker>` renders the default pin, or your own markup when given children. With `draggable`, `bind:lngLat` reflects the drag.
+`<Marker>` renders the default pin. A `content` snippet replaces it with your own markup; anything else nested — a `<Popup>`, for instance — attaches to the marker and leaves the pin alone. With `draggable`, `bind:lngLat` reflects the drag.
+
+```svelte
+<Marker lngLat={position}>
+	{#snippet content()}
+		<div class="chip">Custom</div>
+	{/snippet}
+</Marker>
+```
 
 `<Popup>` works standalone with `lngLat` and `bind:open`, or nested inside a `<Marker>`, where the marker owns the open/close behaviour:
 
