@@ -67,6 +67,12 @@ Four decisions shape the whole API.
 
 Changing `mapStyle` swaps the style in place rather than recreating the map; descendants re-add themselves once the new style has loaded.
 
+`padding` insets the viewport, which moves the vanishing point off centre. `interactions` enables and disables gesture handlers at runtime; an omitted key is left alone, so you toggle only what you name:
+
+```svelte
+<MapLibre mapStyle={style} interactions={{ scrollZoom: false, dragRotate: allowRotation }} />
+```
+
 ### Controls
 
 `<NavigationControl>`, `<ScaleControl>`, `<GeolocateControl>`, `<FullscreenControl>`, `<AttributionControl>`, `<GlobeControl>`, `<TerrainControl>`, `<LogoControl>`.
@@ -85,11 +91,13 @@ Each takes its native options as props plus `position`, and exposes `bind:contro
 
 ### Sources
 
-`<GeoJSONSource>`, `<VectorSource>`, `<RasterSource>`, `<RasterDEMSource>`, `<ImageSource>`, `<VideoSource>`, and the generic `<Source>` which takes a raw `SourceSpecification`.
+`<GeoJSONSource>`, `<VectorSource>`, `<RasterSource>`, `<RasterDEMSource>`, `<ImageSource>`, `<VideoSource>`, `<CanvasSource>`, and the generic `<Source>` which takes a raw `SourceSpecification`.
 
 ### Layers
 
 `<FillLayer>`, `<LineLayer>`, `<SymbolLayer>`, `<CircleLayer>`, `<HeatmapLayer>`, `<FillExtrusionLayer>`, `<RasterLayer>`, `<HillshadeLayer>`, `<ColorReliefLayer>`, `<BackgroundLayer>`, and the generic `<Layer>`.
+
+`<CustomLayer>` mounts your own WebGL layer — three.js, babylon.js, or raw GL — through MapLibre's `CustomLayerInterface`.
 
 Common props: `id`, `source` (defaults to the enclosing source), `sourceLayer`, `paint`, `layout`, `filter`, `minzoom`, `maxzoom`, `beforeId`, and `visible` as sugar over `layout.visibility`.
 
@@ -118,6 +126,65 @@ Layer-scoped events are typed:
 </Marker>
 ```
 
+### Style state
+
+Terrain, sky, light and projection are properties of the style rather than entries in it. These components apply them on mount and **put back what the style declared** on unmount, so mounting one inside an `{#if}` is a safe way to turn an effect on and off.
+
+```svelte
+<RasterDEMSource id="dem" tiles={[demUrl]} encoding="terrarium">
+	<Terrain exaggeration={1.5} />
+</RasterDEMSource>
+
+<Sky sky-color="#001133" horizon-color="#8899aa" fog-color="#ffffff" />
+<Light anchor="map" intensity={0.4} />
+<Projection type="globe" />
+```
+
+`<Terrain>` inherits its source id from an enclosing `<RasterDEMSource>`, the same way layers do.
+
+`<Image>` registers an icon for `icon-image` to reference, from a URL or from pixels you already have, and re-registers it after a style swap:
+
+```svelte
+<Image id="cat" url="/cat.png" />
+<Image id="pulse" image={generatedPixels} pixelRatio={2} sdf />
+<Image id="popup-bg" url="/popup.png" stretchX={[[25, 55]]} content={[25, 25, 115, 100]} />
+```
+
+`<GlobalState>` turns every prop into a global state property, readable from style expressions through `["global-state", "name"]`:
+
+```svelte
+<GlobalState labelSize={14} showBuildings={true} />
+```
+
+### Data
+
+`<FeatureState>` makes hover and selection declarative. Mount it while a feature is active; unmounting clears the state, so there is no `setFeatureState` left without its matching `removeFeatureState`:
+
+```svelte
+<GeoJSONSource id="counties" data={counties}>
+	{#if hoveredId !== null}
+		<FeatureState id={hoveredId} state={{ hover: true }} />
+	{/if}
+
+	<FillLayer
+		id="counties-fill"
+		paint={{ 'fill-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 1, 0.4] }}
+		onmousemove={(event) => (hoveredId = event.features?.[0]?.id ?? null)}
+		onmouseleave={() => (hoveredId = null)}
+	/>
+</GeoJSONSource>
+```
+
+`<Protocol>` registers a custom URL scheme — PMTiles, or a transform over an existing endpoint. MapLibre keeps protocols in a global registry, not on the map, so **place it above `<MapLibre>`**: sibling effects run in document order, and the scheme must exist before the map requests anything through it.
+
+```svelte
+<Protocol name="pmtiles" handler={pmtilesProtocol.tile} />
+
+<MapLibre mapStyle={style}>
+	<VectorSource id="tiles" url="pmtiles://https://example.com/tiles.pmtiles" />
+</MapLibre>
+```
+
 ## Two-way camera binding
 
 `bind:center`, `bind:zoom`, `bind:bearing`, and `bind:pitch` are genuinely bidirectional. Panning writes back to your state; assigning to your state moves the map. The loop is broken by comparison, not by a mutex: an update that matches where the map already is does nothing. `cameraMode` picks how prop-driven moves animate — `'jump'`, `'ease'` (default), or `'fly'`.
@@ -138,6 +205,25 @@ Nothing here is a wall. `bind:map` gives you the raw `Map`; `getMapContext()` gi
 	});
 </script>
 ```
+
+## Provenance
+
+The component surface is derived from the [official MapLibre GL JS examples](https://maplibre.org/maplibre-gl-js/docs/examples/) rather than invented. Each component exists because real examples need it:
+
+| Component        | Examples it covers                                                                     |
+| ---------------- | -------------------------------------------------------------------------------------- |
+| `<Terrain>`      | 3D Terrain; quantized-mesh terrain; hybrid satellite with elevation; Sky, Fog, Terrain |
+| `<Sky>`          | Sky, Fog, Terrain; globe with an atmosphere                                            |
+| `<Projection>`   | the globe family — vector globe, custom layers on a globe, fill extrusion on a globe   |
+| `<Light>`        | display buildings in 3D                                                                |
+| `<Image>`        | add an icon; generated icon; stretchable image; remote SVG symbol; fallback image      |
+| `<CanvasSource>` | add a canvas source                                                                    |
+| `<CustomLayer>`  | custom style layer; three.js and babylon.js models; custom layers on a globe           |
+| `<FeatureState>` | create a hover effect; get features under the mouse pointer                            |
+| `<Protocol>`     | PMTiles source and protocol; addProtocol to transform feature properties               |
+| `<GlobalState>`  | filter layer symbols using global state                                                |
+| `padding`        | offset the vanishing point using padding                                               |
+| `interactions`   | toggle interactions; disable rotation; disable scroll zoom                             |
 
 ## Development
 
