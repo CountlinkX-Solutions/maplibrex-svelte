@@ -3,38 +3,44 @@
 	import {
 		BackgroundLayer,
 		FillLayer,
-		GeoJSONSource,
 		LineLayer,
 		MapLibre,
-		NavigationControl
+		NavigationControl,
+		VectorSource
 	} from '$lib/index.js';
 	import DemoFrame from '../ui/DemoFrame.svelte';
-	import { grid } from './data.js';
-
-	const cells = grid();
+	import { DEMOTILES_VECTOR } from './data.js';
 
 	// A style with no layers at all, so the only background is the one below.
 	const emptyStyle: StyleSpecification = { version: 8, sources: {}, layers: [] };
 
-	let color = $state('#0f1b21');
+	let colour = $state('#0b2a3a');
 	let showBackground = $state(true);
 </script>
 
 <DemoFrame
 	title="The layer underneath everything"
-	caption="Background is the only layer type with no source: it paints the whole viewport. Turn it off and you see the map's own canvas, not a hole in the data."
+	caption="Land comes from a vector source; the sea is not data at all — it is the background showing through. Turn the background off and the ocean becomes the page, which is what makes this layer type worth having."
 >
-	<MapLibre mapStyle={emptyStyle} center={[0, 46]} zoom={3}>
+	<MapLibre mapStyle={emptyStyle} center={[10, 47]} zoom={3.4}>
 		<NavigationControl />
 
 		{#if showBackground}
-			<BackgroundLayer id="bg" paint={{ 'background-color': color }} />
+			<BackgroundLayer id="bg" paint={{ 'background-color': colour }} />
 		{/if}
 
-		<GeoJSONSource id="bg-cells" data={cells}>
-			<FillLayer id="bg-fill" paint={{ 'fill-color': '#35c9b8', 'fill-opacity': 0.3 }} />
-			<LineLayer id="bg-outline" paint={{ 'line-color': '#7fd8cd', 'line-width': 1 }} />
-		</GeoJSONSource>
+		<VectorSource id="world" url={DEMOTILES_VECTOR}>
+			<FillLayer
+				id="world-fill"
+				sourceLayer="countries"
+				paint={{ 'fill-color': '#e8e2d5', 'fill-opacity': 1 }}
+			/>
+			<LineLayer
+				id="world-outline"
+				sourceLayer="countries"
+				paint={{ 'line-color': '#b9ad97', 'line-width': 0.8 }}
+			/>
+		</VectorSource>
 	</MapLibre>
 
 	{#snippet controls()}
@@ -43,8 +49,8 @@
 			background layer
 		</label>
 		<label>
-			colour
-			<input type="color" bind:value={color} />
+			sea colour
+			<input type="color" bind:value={colour} />
 		</label>
 	{/snippet}
 </DemoFrame>

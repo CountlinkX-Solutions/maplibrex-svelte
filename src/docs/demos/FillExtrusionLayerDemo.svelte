@@ -1,35 +1,42 @@
 <script lang="ts">
 	import { FillExtrusionLayer, GeoJSONSource, MapLibre, NavigationControl } from '$lib/index.js';
 	import DemoFrame from '../ui/DemoFrame.svelte';
-	import { DEMO_STYLE, grid } from './data.js';
+	import { OSM_STYLE, blocks } from './data.js';
 
-	const cells = grid();
+	const buildings = blocks();
 
 	let scale = $state(1);
-	let opacity = $state(0.9);
+	let opacity = $state(0.95);
 </script>
 
 <DemoFrame
 	title="Polygons with height"
-	caption="Height is read per feature from a property, so one layer draws blocks of different sizes. Extrusions only exist when the camera is pitched — flat on, this is an ordinary fill."
+	caption="Height is in metres and read per feature, so one layer draws blocks of different sizes. Extrusions only exist when the camera is pitched — flat on, this is an ordinary fill."
 >
-	<MapLibre mapStyle={DEMO_STYLE} center={[0, 42]} zoom={3.4} pitch={55} bearing={-15}>
+	<MapLibre
+		mapStyle={OSM_STYLE}
+		center={[2.3522, 48.8566]}
+		zoom={15.1}
+		pitch={58}
+		bearing={-22}
+		options={{ maxPitch: 85 }}
+	>
 		<NavigationControl visualizePitch />
 
-		<GeoJSONSource id="blocks" data={cells}>
+		<GeoJSONSource id="blocks" data={buildings}>
 			<FillExtrusionLayer
 				id="blocks-3d"
 				paint={{
 					'fill-extrusion-height': ['*', ['get', 'height'], scale],
-					'fill-extrusion-base': 0,
+					'fill-extrusion-base': ['get', 'base'],
 					'fill-extrusion-opacity': opacity,
 					'fill-extrusion-color': [
 						'interpolate',
 						['linear'],
 						['get', 'height'],
-						20000,
+						12,
 						'#0d9488',
-						245000,
+						124,
 						'#b91c1c'
 					]
 				}}

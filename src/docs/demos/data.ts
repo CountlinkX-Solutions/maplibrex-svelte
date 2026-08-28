@@ -140,11 +140,7 @@ export function grid(
 				// Feature state needs an id, and this is the id the demos reference.
 				id: row * columns + column + 1,
 				type: 'Feature' as const,
-				properties: {
-					name: `Cell ${row * columns + column + 1}`,
-					// Something for a data-driven extrusion to read.
-					height: 20000 + ((row * columns + column) % 6) * 45000
-				},
+				properties: { name: `Cell ${row * columns + column + 1}` },
 				geometry: {
 					type: 'Polygon' as const,
 					coordinates: [
@@ -222,4 +218,64 @@ export function route(points = 60): FeatureCollection<LineString, Record<string,
 		type: 'FeatureCollection',
 		features: [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates } }]
 	};
+}
+
+/**
+ * City blocks at a realistic size, for a fill-extrusion demo that reads as
+ * buildings rather than as an abstract slab.
+ *
+ * Extrusion height is in metres, so footprints have to be metres wide too. A
+ * grid of whole degrees extruded by tens of kilometres renders fine and looks
+ * broken.
+ */
+export function blocks(
+	centre: [number, number] = [2.3522, 48.8566],
+	columns = 6,
+	rows = 6
+): FeatureCollection<Polygon, { height: number; base: number }> {
+	const [lng, lat] = centre;
+	const metresPerDegreeLat = 111_320;
+	const metresPerDegreeLng = metresPerDegreeLat * Math.cos((lat * Math.PI) / 180);
+
+	const footprint = 70;
+	const spacing = 110;
+
+	const features = [];
+
+	for (let row = 0; row < rows; row += 1) {
+		for (let column = 0; column < columns; column += 1) {
+			const offsetX = (column - (columns - 1) / 2) * spacing;
+			const offsetY = (row - (rows - 1) / 2) * spacing;
+
+			const west = lng + (offsetX - footprint / 2) / metresPerDegreeLng;
+			const east = lng + (offsetX + footprint / 2) / metresPerDegreeLng;
+			const south = lat + (offsetY - footprint / 2) / metresPerDegreeLat;
+			const north = lat + (offsetY + footprint / 2) / metresPerDegreeLat;
+
+			const index = row * columns + column;
+
+			features.push({
+				type: 'Feature' as const,
+				properties: {
+					// Ordinary building heights, so the scale control stays believable.
+					height: 12 + ((index * 37) % 9) * 14,
+					base: index % 5 === 0 ? 0 : 0
+				},
+				geometry: {
+					type: 'Polygon' as const,
+					coordinates: [
+						[
+							[west, south],
+							[east, south],
+							[east, north],
+							[west, north],
+							[west, south]
+						]
+					]
+				}
+			});
+		}
+	}
+
+	return { type: 'FeatureCollection', features };
 }
