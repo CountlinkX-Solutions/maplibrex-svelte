@@ -535,7 +535,8 @@ export const COMPONENTS: ComponentDoc[] = [
 			SOURCE_CHILDREN_PROP
 		],
 		notes: ['Layers on a vector source almost always need sourceLayer.'],
-		examples: ['Add a vector tile source', 'PMTiles source and protocol']
+		examples: ['Add a vector tile source', 'PMTiles source and protocol'],
+		demo: 'source-vector'
 	},
 	{
 		slug: 'raster-source',
@@ -572,7 +573,8 @@ export const COMPONENTS: ComponentDoc[] = [
 			{ name: 'attribution', type: 'string', description: 'Shown by the attribution control.' },
 			SOURCE_CHILDREN_PROP
 		],
-		examples: ['Add a raster tile source', 'Add a WMS source', 'Add a COG raster source']
+		examples: ['Add a raster tile source', 'Add a WMS source', 'Add a COG raster source'],
+		demo: 'source-raster'
 	},
 	{
 		slug: 'raster-dem-source',
@@ -603,7 +605,8 @@ export const COMPONENTS: ComponentDoc[] = [
 			SOURCE_CHILDREN_PROP
 		],
 		notes: ['Terrain and Hillshade nested here inherit this source id.'],
-		examples: ['3D Terrain', 'Add a hillshade layer', 'Add a color relief layer']
+		examples: ['3D Terrain', 'Add a hillshade layer', 'Add a color relief layer'],
+		demo: 'source-raster-dem'
 	},
 	{
 		slug: 'image-source',
@@ -628,7 +631,8 @@ export const COMPONENTS: ComponentDoc[] = [
 			},
 			SOURCE_CHILDREN_PROP
 		],
-		examples: ['Animate a series of images']
+		examples: ['Animate a series of images'],
+		demo: 'source-image'
 	},
 	{
 		slug: 'video-source',
@@ -658,7 +662,8 @@ export const COMPONENTS: ComponentDoc[] = [
 			},
 			SOURCE_CHILDREN_PROP
 		],
-		examples: ['Add a video']
+		examples: ['Add a video'],
+		demo: 'source-video'
 	},
 	{
 		slug: 'canvas-source',
@@ -690,7 +695,8 @@ export const COMPONENTS: ComponentDoc[] = [
 			},
 			SOURCE_CHILDREN_PROP
 		],
-		examples: ['Add a canvas source']
+		examples: ['Add a canvas source'],
+		demo: 'source-canvas'
 	},
 	{
 		slug: 'source',
@@ -712,7 +718,8 @@ export const COMPONENTS: ComponentDoc[] = [
 		],
 		notes: [
 			'This is what every typed source wrapper delegates to, so the update behaviour is identical.'
-		]
+		],
+		demo: 'source-raw'
 	},
 
 	// Layers ---------------------------------------------------------------

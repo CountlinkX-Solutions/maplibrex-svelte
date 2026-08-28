@@ -3,6 +3,75 @@ import type { FeatureCollection, Point, Polygon } from 'geojson';
 
 export const DEMO_STYLE = 'https://demotiles.maplibre.org/style.json';
 
+/** The vector tiles behind the demo style: layers `countries`, `centroids`, `geolines`. */
+export const DEMOTILES_VECTOR = 'https://demotiles.maplibre.org/tiles/tiles.json';
+
+/** A blank canvas to hang a source on when the basemap would only distract. */
+export const BLANK_STYLE: StyleSpecification = {
+	version: 8,
+	sources: {},
+	layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#0f1b21' } }]
+};
+
+/**
+ * Public sample video with permissive CORS, the same one the official
+ * "Add a video" example uses.
+ */
+export const DRONE_VIDEO = [
+	'https://static-assets.mapbox.com/mapbox-gl-js/drone.mp4',
+	'https://static-assets.mapbox.com/mapbox-gl-js/drone.webm'
+];
+
+/** Four corners, clockwise from the top left — the shape image, video and canvas sources all take. */
+export type Corners = [[number, number], [number, number], [number, number], [number, number]];
+
+export const DRONE_CORNERS: Corners = [
+	[-122.51596391201019, 37.56238816766053],
+	[-122.51467645168304, 37.56410183312965],
+	[-122.51309394836426, 37.563391708549425],
+	[-122.51423120498657, 37.56161849366671]
+];
+
+/**
+ * An overlay drawn into a canvas and handed over as a PNG data URL, so the
+ * image demo needs no asset in the repository and no network request.
+ *
+ * PNG rather than SVG on purpose: MapLibre decodes image sources with
+ * `createImageBitmap`, which rejects SVG with "The source image could not be
+ * decoded".
+ */
+export function overlayImageUrl(size = 256): string {
+	const canvas = document.createElement('canvas');
+	canvas.width = size;
+	canvas.height = size;
+
+	const context = canvas.getContext('2d');
+	if (!context) return '';
+
+	const gradient = context.createLinearGradient(0, 0, size, size);
+	gradient.addColorStop(0, '#0d9488');
+	gradient.addColorStop(1, '#b91c1c');
+	context.fillStyle = gradient;
+	context.fillRect(0, 0, size, size);
+
+	context.strokeStyle = '#ffffff';
+	context.lineWidth = 4;
+	context.strokeRect(16, 16, size - 32, size - 32);
+
+	context.beginPath();
+	context.arc(size / 2, size / 2, size / 3.6, 0, Math.PI * 2);
+	context.stroke();
+
+	context.beginPath();
+	context.moveTo(size / 2, 40);
+	context.lineTo(size / 2, size - 40);
+	context.moveTo(40, size / 2);
+	context.lineTo(size - 40, size / 2);
+	context.stroke();
+
+	return canvas.toDataURL('image/png');
+}
+
 /**
  * The elevation source MapLibre's own 3D terrain example uses. The older
  * demotiles terrain endpoint covers roughly one degree square and 404s
@@ -112,4 +181,28 @@ export function ringIcon(size = 32): ImageData {
 	}
 
 	return new ImageData(pixels, size, size);
+}
+
+/**
+ * Deterministic scatter, so clustering has something to cluster and the demo
+ * looks the same on every load.
+ */
+export function scatter(count = 400): FeatureCollection<Point, { weight: number }> {
+	let seed = 42;
+	const random = () => {
+		seed = (seed * 1103515245 + 12345) % 2147483648;
+		return seed / 2147483648;
+	};
+
+	return {
+		type: 'FeatureCollection',
+		features: Array.from({ length: count }, () => ({
+			type: 'Feature' as const,
+			properties: { weight: Math.round(random() * 10) },
+			geometry: {
+				type: 'Point' as const,
+				coordinates: [-10 + random() * 30, 36 + random() * 18]
+			}
+		}))
+	};
 }
