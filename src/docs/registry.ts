@@ -256,7 +256,7 @@ export const COMPONENTS: ComponentDoc[] = [
 		],
 		notes: [CONTROL_NOTE],
 		examples: ['Display map navigation controls'],
-		demo: 'controls'
+		demo: 'control-navigation'
 	},
 	{
 		slug: 'scale-control',
@@ -280,7 +280,7 @@ export const COMPONENTS: ComponentDoc[] = [
 			...CONTROL_PROPS
 		],
 		notes: [CONTROL_NOTE],
-		demo: 'controls'
+		demo: 'control-scale'
 	},
 	{
 		slug: 'geolocate-control',
@@ -331,9 +331,11 @@ export const COMPONENTS: ComponentDoc[] = [
 		],
 		notes: [
 			CONTROL_NOTE,
-			'Geolocation needs a secure context. On http:// the browser refuses the request before MapLibre sees it.'
+			'Geolocation needs a secure context. On http:// the browser refuses the request before MapLibre sees it.',
+			'Denial is a normal outcome, not an edge case. Handle onerror rather than assuming a position will arrive.'
 		],
-		examples: ['Locate the user']
+		examples: ['Locate the user'],
+		demo: 'control-geolocate'
 	},
 	{
 		slug: 'fullscreen-control',
@@ -347,10 +349,19 @@ export const COMPONENTS: ComponentDoc[] = [
 				type: 'HTMLElement',
 				description: 'The element to expand. Defaults to the map container.'
 			},
+			{
+				name: 'on<event>',
+				type: '(event) => void',
+				description: 'onfullscreenstart, onfullscreenend.'
+			},
 			...CONTROL_PROPS
 		],
-		notes: [CONTROL_NOTE],
-		examples: ['View a fullscreen map']
+		notes: [
+			CONTROL_NOTE,
+			'Entering fullscreen needs a user gesture, so it cannot be triggered from an effect.'
+		],
+		examples: ['View a fullscreen map'],
+		demo: 'control-fullscreen'
 	},
 	{
 		slug: 'globe-control',
@@ -361,7 +372,7 @@ export const COMPONENTS: ComponentDoc[] = [
 		props: CONTROL_PROPS,
 		notes: [CONTROL_NOTE],
 		examples: ['Display a globe with a vector map'],
-		demo: 'controls'
+		demo: 'control-globe'
 	},
 	{
 		slug: 'terrain-control',
@@ -375,7 +386,8 @@ export const COMPONENTS: ComponentDoc[] = [
 			...CONTROL_PROPS
 		],
 		notes: [CONTROL_NOTE],
-		examples: ['3D Terrain']
+		examples: ['3D Terrain'],
+		demo: 'control-terrain'
 	},
 	{
 		slug: 'attribution-control',
@@ -396,7 +408,8 @@ export const COMPONENTS: ComponentDoc[] = [
 			CONTROL_NOTE,
 			'The map adds one by default. Pass attributionControl: false through options before adding your own, or you get two.'
 		],
-		examples: ['Change the default position for attribution']
+		examples: ['Change the default position for attribution'],
+		demo: 'control-attribution'
 	},
 	{
 		slug: 'logo-control',
@@ -408,7 +421,8 @@ export const COMPONENTS: ComponentDoc[] = [
 			{ name: 'compact', type: 'boolean', description: 'Uses the condensed mark.' },
 			...CONTROL_PROPS
 		],
-		notes: [CONTROL_NOTE]
+		notes: [CONTROL_NOTE],
+		demo: 'control-logo'
 	},
 	{
 		slug: 'custom-control',
@@ -436,7 +450,7 @@ export const COMPONENTS: ComponentDoc[] = [
 		notes: [
 			'The snippet is rendered into a hidden holder and MapLibre relocates that node into its control container. Svelte keeps owning it, so the content stays reactive after the move.'
 		],
-		demo: 'controls'
+		demo: 'control-custom'
 	},
 	{
 		slug: 'control',
@@ -460,7 +474,8 @@ export const COMPONENTS: ComponentDoc[] = [
 		],
 		notes: [
 			'Options are compared by a stable key, so key order is not treated as a change. A real change recreates the control.'
-		]
+		],
+		demo: 'control-generic'
 	},
 
 	// Sources --------------------------------------------------------------

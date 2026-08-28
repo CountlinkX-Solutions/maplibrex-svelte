@@ -1,24 +1,34 @@
 import type { Component } from 'svelte';
 import BasicMap from './BasicMap.svelte';
+import AttributionControlDemo from './AttributionControlDemo.svelte';
 import BackgroundLayerDemo from './BackgroundLayerDemo.svelte';
 import CanvasSourceDemo from './CanvasSourceDemo.svelte';
 import ColorReliefLayerDemo from './ColorReliefLayerDemo.svelte';
+import ControlDemo from './ControlDemo.svelte';
+import CustomControlDemo from './CustomControlDemo.svelte';
 import CustomLayerDemo from './CustomLayerDemo.svelte';
+import FullscreenControlDemo from './FullscreenControlDemo.svelte';
 import FillExtrusionLayerDemo from './FillExtrusionLayerDemo.svelte';
 import ControlsDemo from './ControlsDemo.svelte';
 import GeoJsonDemo from './GeoJsonDemo.svelte';
 import HoverDemo from './HoverDemo.svelte';
 import ImageDemo from './ImageDemo.svelte';
+import GeolocateControlDemo from './GeolocateControlDemo.svelte';
+import GlobeControlDemo from './GlobeControlDemo.svelte';
 import HeatmapLayerDemo from './HeatmapLayerDemo.svelte';
 import ImageSourceDemo from './ImageSourceDemo.svelte';
 import LayerTypeDemo from './LayerTypeDemo.svelte';
 import LineLayerDemo from './LineLayerDemo.svelte';
+import LogoControlDemo from './LogoControlDemo.svelte';
+import NavigationControlDemo from './NavigationControlDemo.svelte';
 import LayerStyleDemo from './LayerStyleDemo.svelte';
 import MarkerPopupDemo from './MarkerPopupDemo.svelte';
 import ProjectionDemo from './ProjectionDemo.svelte';
 import RasterDEMSourceDemo from './RasterDEMSourceDemo.svelte';
 import RasterSourceDemo from './RasterSourceDemo.svelte';
+import ScaleControlDemo from './ScaleControlDemo.svelte';
 import SourceDemo from './SourceDemo.svelte';
+import TerrainControlDemo from './TerrainControlDemo.svelte';
 import TerrainDemo from './TerrainDemo.svelte';
 import VectorSourceDemo from './VectorSourceDemo.svelte';
 import VideoSourceDemo from './VideoSourceDemo.svelte';
@@ -50,5 +60,15 @@ export const DEMOS: Record<string, Component> = {
 	'layer-color-relief': ColorReliefLayerDemo,
 	'layer-background': BackgroundLayerDemo,
 	'layer-custom': CustomLayerDemo,
-	'layer-generic': LayerTypeDemo
+	'layer-generic': LayerTypeDemo,
+	'control-navigation': NavigationControlDemo,
+	'control-scale': ScaleControlDemo,
+	'control-globe': GlobeControlDemo,
+	'control-fullscreen': FullscreenControlDemo,
+	'control-geolocate': GeolocateControlDemo,
+	'control-terrain': TerrainControlDemo,
+	'control-attribution': AttributionControlDemo,
+	'control-logo': LogoControlDemo,
+	'control-custom': CustomControlDemo,
+	'control-generic': ControlDemo
 };
