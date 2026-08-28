@@ -1,5 +1,5 @@
 import type { StyleSpecification } from 'maplibre-gl';
-import type { FeatureCollection, Point, Polygon } from 'geojson';
+import type { FeatureCollection, LineString, Point, Polygon } from 'geojson';
 
 export const DEMO_STYLE = 'https://demotiles.maplibre.org/style.json';
 
@@ -140,7 +140,11 @@ export function grid(
 				// Feature state needs an id, and this is the id the demos reference.
 				id: row * columns + column + 1,
 				type: 'Feature' as const,
-				properties: { name: `Cell ${row * columns + column + 1}` },
+				properties: {
+					name: `Cell ${row * columns + column + 1}`,
+					// Something for a data-driven extrusion to read.
+					height: 20000 + ((row * columns + column) % 6) * 45000
+				},
 				geometry: {
 					type: 'Polygon' as const,
 					coordinates: [
@@ -204,5 +208,18 @@ export function scatter(count = 400): FeatureCollection<Point, { weight: number 
 				coordinates: [-10 + random() * 30, 36 + random() * 18]
 			}
 		}))
+	};
+}
+
+/** A smooth polyline, so a line layer has something with length to style. */
+export function route(points = 60): FeatureCollection<LineString, Record<string, never>> {
+	const coordinates: [number, number][] = Array.from({ length: points }, (_, index) => {
+		const t = index / (points - 1);
+		return [-9 + t * 30, 42 + Math.sin(t * Math.PI * 2.2) * 6];
+	});
+
+	return {
+		type: 'FeatureCollection',
+		features: [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates } }]
 	};
 }

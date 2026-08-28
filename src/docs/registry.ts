@@ -758,7 +758,8 @@ export const COMPONENTS: ComponentDoc[] = [
 				'Add a GeoJSON line',
 				'Style lines with a data-driven property',
 				'Create a gradient line using an expression'
-			]
+			],
+			demo: 'layer-line'
 		}
 	),
 	layerDoc(
@@ -805,7 +806,8 @@ export const COMPONENTS: ComponentDoc[] = [
 			examples: [
 				'Create a heatmap layer',
 				'Create a Heatmap layer on a globe with terrain elevation'
-			]
+			],
+			demo: 'layer-heatmap'
 		}
 	),
 	layerDoc(
@@ -824,7 +826,8 @@ export const COMPONENTS: ComponentDoc[] = [
 				'Display buildings in 3D',
 				'Extrude polygons for 3D indoor mapping',
 				'Fill extrusion rounded corners'
-			]
+			],
+			demo: 'layer-extrusion'
 		}
 	),
 	layerDoc(
@@ -832,7 +835,7 @@ export const COMPONENTS: ComponentDoc[] = [
 		'RasterLayer',
 		'Draws a raster, image, video or canvas source.',
 		`<RasterLayer id="satellite" paint={{ 'raster-opacity': 0.8 }} />`,
-		{ examples: ['Display a satellite map', 'Add a WMS source'] }
+		{ examples: ['Display a satellite map', 'Add a WMS source'], demo: 'source-raster' }
 	),
 	layerDoc(
 		'hillshade-layer',
@@ -858,7 +861,7 @@ export const COMPONENTS: ComponentDoc[] = [
   id="relief"
   paint={{ 'color-relief-color': ['interpolate', ['linear'], ['elevation'], 0, '#0a0', 3000, '#fff'] }}
 />`,
-		{ examples: ['Add a color relief layer'] }
+		{ examples: ['Add a color relief layer'], demo: 'layer-color-relief' }
 	),
 	layerDoc(
 		'background-layer',
@@ -869,7 +872,8 @@ export const COMPONENTS: ComponentDoc[] = [
 			props: LAYER_PROPS.filter((prop) => !['source', 'sourceLayer'].includes(prop.name)),
 			notes: [
 				'The only layer type that needs no source, so it is also the only one you can mount as a direct child of the map.'
-			]
+			],
+			demo: 'layer-background'
 		}
 	),
 	{
@@ -883,8 +887,14 @@ export const COMPONENTS: ComponentDoc[] = [
   const layer: CustomLayerInterface = {
     id: 'my-gl-layer',
     type: 'custom',
-    onAdd(map, gl) { /* build your scene */ },
-    render(gl, args) { /* draw a frame */ }
+    onAdd(map, gl) { /* compile shaders, upload buffers */ },
+    render(gl, args) {
+      gl.useProgram(program);
+      // v6: take the matrix from the projection data, not from
+      // args.modelViewProjectionMatrix.
+      gl.uniformMatrix4fv(matrix, false, args.defaultProjectionData.mainMatrix);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
   };
 </script>
 
@@ -899,13 +909,17 @@ export const COMPONENTS: ComponentDoc[] = [
 			{ name: 'beforeId', type: 'string', description: 'Insert before this layer id.' }
 		],
 		notes: [
-			'MapLibre owns the rendering hooks; this component owns when the layer is in the style, including re-adding it after a style swap.'
+			'MapLibre owns the rendering hooks; this component owns when the layer is in the style, including re-adding it after a style swap.',
+			'Use args.defaultProjectionData.mainMatrix for your projection uniform. v6 moved it there so one layer works under both mercator and globe; the older args.modelViewProjectionMatrix still exists, compiles, and draws nothing you can see.',
+			'A shader that fails to compile is silent — the draw call just produces nothing. Check COMPILE_STATUS and LINK_STATUS, or you will debug geometry that was never the problem.',
+			'Position vertices in mercator units from MercatorCoordinate.fromLngLat, so they stay pinned as the map moves.'
 		],
 		examples: [
 			'Add a custom style layer',
 			'Add a 3D model using three.js',
 			'Add a simple custom layer on a globe'
-		]
+		],
+		demo: 'layer-custom'
 	},
 	{
 		slug: 'layer',
@@ -924,7 +938,8 @@ export const COMPONENTS: ComponentDoc[] = [
 		],
 		notes: [
 			'This is what every typed layer wrapper delegates to. Prefer the typed wrappers: they narrow paint and layout to the properties that layer type actually has.'
-		]
+		],
+		demo: 'layer-generic'
 	},
 
 	// Overlays -------------------------------------------------------------

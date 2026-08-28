@@ -1,11 +1,18 @@
 import type { Component } from 'svelte';
 import BasicMap from './BasicMap.svelte';
+import BackgroundLayerDemo from './BackgroundLayerDemo.svelte';
 import CanvasSourceDemo from './CanvasSourceDemo.svelte';
+import ColorReliefLayerDemo from './ColorReliefLayerDemo.svelte';
+import CustomLayerDemo from './CustomLayerDemo.svelte';
+import FillExtrusionLayerDemo from './FillExtrusionLayerDemo.svelte';
 import ControlsDemo from './ControlsDemo.svelte';
 import GeoJsonDemo from './GeoJsonDemo.svelte';
 import HoverDemo from './HoverDemo.svelte';
 import ImageDemo from './ImageDemo.svelte';
+import HeatmapLayerDemo from './HeatmapLayerDemo.svelte';
 import ImageSourceDemo from './ImageSourceDemo.svelte';
+import LayerTypeDemo from './LayerTypeDemo.svelte';
+import LineLayerDemo from './LineLayerDemo.svelte';
 import LayerStyleDemo from './LayerStyleDemo.svelte';
 import MarkerPopupDemo from './MarkerPopupDemo.svelte';
 import ProjectionDemo from './ProjectionDemo.svelte';
@@ -36,5 +43,12 @@ export const DEMOS: Record<string, Component> = {
 	'source-raster-dem': RasterDEMSourceDemo,
 	'source-image': ImageSourceDemo,
 	'source-video': VideoSourceDemo,
-	'source-canvas': CanvasSourceDemo
+	'source-canvas': CanvasSourceDemo,
+	'layer-line': LineLayerDemo,
+	'layer-heatmap': HeatmapLayerDemo,
+	'layer-extrusion': FillExtrusionLayerDemo,
+	'layer-color-relief': ColorReliefLayerDemo,
+	'layer-background': BackgroundLayerDemo,
+	'layer-custom': CustomLayerDemo,
+	'layer-generic': LayerTypeDemo
 };
