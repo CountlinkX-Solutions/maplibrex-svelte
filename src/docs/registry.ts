@@ -1202,9 +1202,12 @@ export const COMPONENTS: ComponentDoc[] = [
 		],
 		notes: [
 			'Unmounting restores what the style declared.',
-			'Only visible on layers that respond to light: fill-extrusion and hillshade.'
+			'Only visible on layers that respond to light: fill-extrusion and hillshade. On anything else it is set and has no effect.',
+			"anchor decides what the light is fixed to. 'map' keeps it over the same ground as you rotate; 'viewport' keeps it over the same corner of the screen.",
+			'position is [radial, azimuthal, polar]: distance, the angle around, and the angle down from straight overhead.'
 		],
-		examples: ['Display buildings in 3D']
+		examples: ['Display buildings in 3D'],
+		demo: 'style-light'
 	},
 	{
 		slug: 'projection',
@@ -1313,9 +1316,12 @@ export const COMPONENTS: ComponentDoc[] = [
 		],
 		notes: [
 			'Values are pushed by diff, so changing one property does not touch the others.',
-			'Unmounting puts the style’s own values back.'
+			'Unmounting puts the style’s own values back.',
+			'A style may declare a state block giving each name a default, so expressions resolve before any value is pushed. It is optional — the expression works without it, you just start from undefined.',
+			'This is what saves threading one value through every layer that needs it: set it once, and every expression mentioning the name sees it.'
 		],
-		examples: ['Filter layer symbols using global state']
+		examples: ['Filter layer symbols using global state'],
+		demo: 'style-global-state'
 	},
 
 	// Data -----------------------------------------------------------------
@@ -1404,9 +1410,11 @@ export const COMPONENTS: ComponentDoc[] = [
 		],
 		notes: [
 			'MapLibre keeps protocols in a global registry, not on the map, so this component needs no map context — and placement matters. Put it above MapLibre: sibling effects run in document order.',
+			'Whatever the handler returns becomes the data. It does not have to come from a network: reading a local file, unpacking an archive, or generating the geometry outright are all the same shape.',
 			'Unmounting removes the scheme.'
 		],
-		examples: ['PMTiles source and protocol', 'Use addProtocol to Transform Feature Properties']
+		examples: ['PMTiles source and protocol', 'Use addProtocol to Transform Feature Properties'],
+		demo: 'data-protocol'
 	}
 ];
 

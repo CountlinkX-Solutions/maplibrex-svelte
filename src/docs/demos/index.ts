@@ -14,16 +14,19 @@ import GeoJsonDemo from './GeoJsonDemo.svelte';
 import HoverDemo from './HoverDemo.svelte';
 import ImageDemo from './ImageDemo.svelte';
 import GeolocateControlDemo from './GeolocateControlDemo.svelte';
+import GlobalStateDemo from './GlobalStateDemo.svelte';
 import GlobeControlDemo from './GlobeControlDemo.svelte';
 import HeatmapLayerDemo from './HeatmapLayerDemo.svelte';
 import ImageSourceDemo from './ImageSourceDemo.svelte';
 import LayerTypeDemo from './LayerTypeDemo.svelte';
+import LightDemo from './LightDemo.svelte';
 import LineLayerDemo from './LineLayerDemo.svelte';
 import LogoControlDemo from './LogoControlDemo.svelte';
 import NavigationControlDemo from './NavigationControlDemo.svelte';
 import LayerStyleDemo from './LayerStyleDemo.svelte';
 import MarkerPopupDemo from './MarkerPopupDemo.svelte';
 import ProjectionDemo from './ProjectionDemo.svelte';
+import ProtocolDemo from './ProtocolDemo.svelte';
 import RasterDEMSourceDemo from './RasterDEMSourceDemo.svelte';
 import RasterSourceDemo from './RasterSourceDemo.svelte';
 import ScaleControlDemo from './ScaleControlDemo.svelte';
@@ -70,5 +73,8 @@ export const DEMOS: Record<string, Component> = {
 	'control-attribution': AttributionControlDemo,
 	'control-logo': LogoControlDemo,
 	'control-custom': CustomControlDemo,
-	'control-generic': ControlDemo
+	'control-generic': ControlDemo,
+	'style-light': LightDemo,
+	'style-global-state': GlobalStateDemo,
+	'data-protocol': ProtocolDemo
 };

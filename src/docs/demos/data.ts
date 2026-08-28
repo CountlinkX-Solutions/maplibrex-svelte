@@ -101,19 +101,47 @@ export const OSM_STYLE: StyleSpecification = {
 	layers: [{ id: 'osm', type: 'raster', source: 'osm' }]
 };
 
+/** The fontstack the demo style actually serves; anything else renders no text. */
+export const DEMO_FONT = ['Open Sans Semibold'];
+
+/**
+ * European cities with rounded metro populations in millions. Approximate on
+ * purpose: the numbers are here to be filtered and ranked, not cited.
+ */
 export const CITIES: FeatureCollection<Point, { name: string; population: number }> = {
 	type: 'FeatureCollection',
-	features: [
-		{ name: 'Madrid', population: 3.2, coordinates: [-3.7038, 40.4168] },
-		{ name: 'Lisbon', population: 0.5, coordinates: [-9.1393, 38.7223] },
-		{ name: 'Paris', population: 2.1, coordinates: [2.3522, 48.8566] },
-		{ name: 'Rome', population: 2.8, coordinates: [12.4964, 41.9028] },
-		{ name: 'Berlin', population: 3.6, coordinates: [13.405, 52.52] },
-		{ name: 'Warsaw', population: 1.8, coordinates: [21.0122, 52.2297] }
-	].map((city) => ({
+	features: (
+		[
+			['Lisbon', -9.139, 38.722, 2.9],
+			['Madrid', -3.704, 40.417, 6.7],
+			['Barcelona', 2.173, 41.385, 5.6],
+			['Paris', 2.352, 48.857, 11.1],
+			['Lyon', 4.835, 45.764, 2.3],
+			['Marseille', 5.369, 43.296, 1.9],
+			['London', -0.128, 51.507, 9.6],
+			['Dublin', -6.26, 53.35, 1.3],
+			['Brussels', 4.352, 50.847, 2.1],
+			['Amsterdam', 4.904, 52.367, 2.5],
+			['Hamburg', 9.994, 53.551, 3.3],
+			['Berlin', 13.405, 52.52, 4.5],
+			['Munich', 11.582, 48.135, 2.9],
+			['Milan', 9.19, 45.464, 4.3],
+			['Rome', 12.496, 41.903, 4.3],
+			['Naples', 14.268, 40.852, 3.1],
+			['Zurich', 8.541, 47.377, 1.4],
+			['Vienna', 16.373, 48.208, 2.9],
+			['Prague', 14.438, 50.076, 1.3],
+			['Warsaw', 21.012, 52.23, 3.1],
+			['Budapest', 19.04, 47.498, 3.0],
+			['Bucharest', 26.103, 44.427, 2.2],
+			['Athens', 23.728, 37.984, 3.2],
+			['Stockholm', 18.069, 59.329, 1.7],
+			['Copenhagen', 12.568, 55.676, 2.1]
+		] as const
+	).map(([name, lng, lat, population]) => ({
 		type: 'Feature' as const,
-		properties: { name: city.name, population: city.population },
-		geometry: { type: 'Point' as const, coordinates: city.coordinates }
+		properties: { name, population },
+		geometry: { type: 'Point' as const, coordinates: [lng, lat] }
 	}))
 };
 
