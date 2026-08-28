@@ -604,7 +604,11 @@ export const COMPONENTS: ComponentDoc[] = [
 			},
 			SOURCE_CHILDREN_PROP
 		],
-		notes: ['Terrain and Hillshade nested here inherit this source id.'],
+		notes: [
+			'Terrain and Hillshade nested here inherit this source id, and both can read the same source at once.',
+			'Only Terrain changes the height of the ground. HillshadeLayer has a paint property called hillshade-exaggeration, but it deepens the shading and moves nothing — the name misleads almost everyone the first time.',
+			'Getting encoding wrong does not fail. Let the TileJSON declare it when it can.'
+		],
 		examples: ['3D Terrain', 'Add a hillshade layer', 'Add a color relief layer'],
 		demo: 'source-raster-dem'
 	},
@@ -833,11 +837,18 @@ export const COMPONENTS: ComponentDoc[] = [
 	layerDoc(
 		'hillshade-layer',
 		'HillshadeLayer',
-		'Shades terrain from a raster-dem source to show relief.',
-		`<RasterDEMSource id="dem" url={terrainTileJson} encoding="terrarium">
+		'Shades terrain from a raster-dem source to show relief, with no pitch required.',
+		`<RasterDEMSource id="dem" url={terrainTileJson}>
   <HillshadeLayer id="hills" paint={{ 'hillshade-exaggeration': 0.6 }} />
 </RasterDEMSource>`,
-		{ examples: ['Add a hillshade layer', 'Add a multidirectional hillshade layer'] }
+		{
+			notes: [
+				'Paint and layout changes are pushed property by property.',
+				'hillshade-exaggeration deepens the shading; it does not raise the ground. Use Terrain for height — the two can read the same source at once.'
+			],
+			examples: ['Add a hillshade layer', 'Add a multidirectional hillshade layer'],
+			demo: 'source-raster-dem'
+		}
 	),
 	layerDoc(
 		'color-relief-layer',
