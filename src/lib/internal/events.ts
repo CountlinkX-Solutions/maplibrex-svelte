@@ -25,3 +25,25 @@ export function pickEventHandlers(props: Record<string, unknown>): Record<string
 
 	return handlers;
 }
+
+/**
+ * Separates `on<event>` callbacks from everything else.
+ *
+ * Control components pass their remaining props straight to a MapLibre
+ * constructor, so an event handler left among them would be handed over as if
+ * it were an option. Splitting first is what lets a control accept both.
+ */
+export function splitEventProps(props: Record<string, unknown>): {
+	events: Record<string, EventHandler>;
+	rest: Record<string, unknown>;
+} {
+	const events: Record<string, EventHandler> = {};
+	const rest: Record<string, unknown> = {};
+
+	for (const [key, value] of Object.entries(props)) {
+		if (isHandlerProp(key, value)) events[key] = value;
+		else rest[key] = value;
+	}
+
+	return { events, rest };
+}

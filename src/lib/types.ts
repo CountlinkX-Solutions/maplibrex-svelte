@@ -7,7 +7,7 @@ import type { MapEventType, MapLayerEventType, MarkerEventType, PopupEventType }
  * becomes available without touching this library, and every handler keeps its
  * exact payload type.
  */
-type EventProps<TEventMap> = {
+export type EventProps<TEventMap> = {
 	[K in keyof TEventMap as `on${K & string}`]?: (event: TEventMap[K]) => void;
 };
 
