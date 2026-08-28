@@ -37,6 +37,20 @@ Import the upstream stylesheet once in your app — controls, markers, and popup
 import 'maplibre-gl/dist/maplibre-gl.css';
 ```
 
+## Should you use this?
+
+Two other libraries cover the same ground, both mature and both published this month:
+
+|                                                                          | maplibre-gl                           | Svelte        | Runtime dependencies                  |
+| ------------------------------------------------------------------------ | ------------------------------------- | ------------- | ------------------------------------- |
+| [`svelte-maplibre`](https://www.npmjs.com/package/svelte-maplibre)       | bundled as a direct dependency (`^6`) | 5             | d3-geo, dequal, just-compare, pmtiles |
+| [`svelte-maplibre-gl`](https://www.npmjs.com/package/svelte-maplibre-gl) | peer (`^5.19 \|\| ^6`)                | ≥5            | —                                     |
+| this one                                                                 | peer (`^6`)                           | 5, runes only | none                                  |
+
+**If you want something proven, use one of those two.** They have real users, real issues filed, and a track record this package does not have yet. This one is at `0.1.0`, and the API has already moved once during its first week.
+
+It exists for a narrower set of preferences: no runtime dependencies at all, MapLibre 6 and Svelte 5 runes only, event props derived from MapLibre's own event maps rather than enumerated by hand, and updates that are surgical by default — a paint change calls one setter, and recreation happens only where MapLibre exposes no alternative.
+
 ## One Vite step you cannot skip
 
 MapLibre v6 loads its web worker from a URL it builds at runtime:
