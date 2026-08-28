@@ -2,6 +2,8 @@
 
 Component-oriented [MapLibre GL JS](https://maplibre.org/) bindings for Svelte 5, written in TypeScript.
 
+**[Documentation and live demos →](https://countlinkx-solutions.github.io/maplibrex-svelte/)** — every component on its own page, with a working map you can drive.
+
 You describe the map as a component tree. The library keeps that tree and the imperative MapLibre instance in sync — adding, updating in place, and tearing down in the right order.
 
 ```svelte
