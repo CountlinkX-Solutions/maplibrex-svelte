@@ -1,5 +1,5 @@
 /**
- * MapLibreX — component-oriented Svelte 5 bindings for MapLibre GL JS.
+ * maplibrex-svelte — component-oriented Svelte 5 bindings for MapLibre GL JS.
  *
  * Remember to load the upstream stylesheet once in your app:
  * `import 'maplibre-gl/dist/maplibre-gl.css';`

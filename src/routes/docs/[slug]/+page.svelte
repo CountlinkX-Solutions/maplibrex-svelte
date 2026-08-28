@@ -14,7 +14,7 @@
 </script>
 
 <svelte:head>
-	<title>{component.name} — MapLibreX</title>
+	<title>{component.name} — maplibrex-svelte</title>
 	<meta name="description" content={component.summary} />
 </svelte:head>
 

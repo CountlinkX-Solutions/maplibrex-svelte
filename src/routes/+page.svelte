@@ -48,7 +48,7 @@ ${CLOSE_SCRIPT}
 </script>
 
 <svelte:head>
-	<title>MapLibreX — Svelte 5 components for MapLibre GL JS</title>
+	<title>maplibrex-svelte — Svelte 5 components for MapLibre GL JS</title>
 	<meta
 		name="description"
 		content="Component-oriented MapLibre GL JS bindings for Svelte 5, written in TypeScript."
@@ -59,8 +59,8 @@ ${CLOSE_SCRIPT}
 	<p class="eyebrow">Svelte 5 · MapLibre GL JS 6 · TypeScript</p>
 	<h1>Describe the map as a component tree.</h1>
 	<p class="lede">
-		MapLibreX keeps that tree and the imperative MapLibre instance in agreement — adding, updating
-		in place, and tearing down in the right order.
+		It keeps that tree and the imperative MapLibre instance in agreement — adding, updating in
+		place, and tearing down in the right order.
 	</p>
 
 	<div class="cta">

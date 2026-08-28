@@ -44,7 +44,7 @@
 <header class="topbar">
 	<a class="brand" href={resolve('/')}>
 		<span class="mark" aria-hidden="true"></span>
-		<span class="wordmark">MapLibre<b>X</b></span>
+		<span class="wordmark">maplibrex<b>-svelte</b></span>
 	</a>
 
 	<nav class="topnav">
@@ -110,7 +110,7 @@
 </div>
 
 <footer class="sitefoot">
-	<p>MapLibreX — Svelte 5 components for MapLibre GL JS. MIT licensed.</p>
+	<p>maplibrex-svelte — Svelte 5 components for MapLibre GL JS. MIT licensed.</p>
 </footer>
 
 <style>
@@ -276,6 +276,12 @@
 			color-mix(in srgb, var(--accent) 45%, #04302c)
 		);
 		box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 60%, transparent);
+	}
+
+	.wordmark {
+		font-family: var(--font-mono);
+		font-size: 0.95rem;
+		letter-spacing: -0.01em;
 	}
 
 	.wordmark b {

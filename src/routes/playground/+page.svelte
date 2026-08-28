@@ -35,8 +35,11 @@
 </script>
 
 <svelte:head>
-	<title>Playground — MapLibreX</title>
-	<meta name="description" content="One map wired to every kind of MapLibreX component at once." />
+	<title>Playground — maplibrex-svelte</title>
+	<meta
+		name="description"
+		content="One map wired to every kind of maplibrex-svelte component at once."
+	/>
 </svelte:head>
 
 <article>

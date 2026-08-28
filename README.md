@@ -1,4 +1,4 @@
-# MapLibreX
+# maplibrex-svelte
 
 Component-oriented [MapLibre GL JS](https://maplibre.org/) bindings for Svelte 5, written in TypeScript.
 

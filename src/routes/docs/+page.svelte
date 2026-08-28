@@ -5,8 +5,8 @@
 </script>
 
 <svelte:head>
-	<title>Components — MapLibreX</title>
-	<meta name="description" content="Every MapLibreX component, grouped by what it does." />
+	<title>Components — maplibrex-svelte</title>
+	<meta name="description" content="Every maplibrex-svelte component, grouped by what it does." />
 </svelte:head>
 
 <article>
