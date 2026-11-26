@@ -70,6 +70,11 @@
 	const registry = getStyleRegistry();
 
 	const resolvedSource = $derived(source ?? sourceContext?.id);
+	// A `$derived` tells its readers only about a new value. Props spread from
+	// an object are read through that object, so replacing it with an equal
+	// one would otherwise register the layer anew: out of the style and back.
+	const stableId = $derived(id);
+	const stableType = $derived(type);
 	const resolvedLayout = $derived({
 		...layout,
 		...(visible ? {} : { visibility: 'none' })
@@ -110,8 +115,8 @@
 	// changes that MapLibre offers no setter for register the layer anew.
 	$effect(() => {
 		const element = anchor;
-		const layerId = id;
-		const layerType = type;
+		const layerId = stableId;
+		const layerType = stableType;
 		const sourceId = resolvedSource;
 		void revision;
 
@@ -260,7 +265,7 @@
 
 	bindLayerEvents(
 		() => (inStyle ? context.map : null),
-		() => id,
+		() => stableId,
 		() => events
 	);
 </script>

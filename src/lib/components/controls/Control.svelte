@@ -25,6 +25,9 @@
 
 	const context = getMapContext();
 	const optionsKey = $derived(stableKey(options));
+	// Read through `$derived`, which passes on only a new value: replacing a
+	// spread props object with an equal one must not build the control anew.
+	const stablePosition = $derived(position);
 
 	// MapLibre controls are configured through their constructor and expose no
 	// setters, so an option or position change means recreate, not mutate.
@@ -41,7 +44,7 @@
 
 	$effect(() => {
 		const map = context.map;
-		const at = position;
+		const at = stablePosition;
 		void optionsKey;
 
 		if (!map) return;

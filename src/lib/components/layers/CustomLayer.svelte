@@ -21,6 +21,9 @@
 	let { layer, beforeId }: Props = $props();
 
 	const registry = getStyleRegistry();
+	// Read through `$derived`, which passes on only a new value: replacing a
+	// spread props object with an equal one must not add the layer anew.
+	const stableLayer = $derived(layer);
 
 	let anchor = $state<HTMLElement>();
 	let registration: DependentRegistration | undefined;
@@ -29,7 +32,7 @@
 	// in the markup relative to them and comes back after a style swap.
 	$effect(() => {
 		const element = anchor;
-		const custom = layer;
+		const custom = stableLayer;
 		if (!element) return;
 
 		const current = registry.addDependent({
