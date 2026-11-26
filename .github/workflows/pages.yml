@@ -1,9 +1,13 @@
 name: Docs site
 
+# Deploys only what CI has passed: the site is built from the commit of a green
+# CI run on main, so a change that fails its checks never reaches the site.
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
-  # Lets you redeploy the current main without pushing a commit.
+  # Lets you redeploy the current main by hand.
   workflow_dispatch:
 
 # The site is public output; nothing here needs write access to the repo.
@@ -20,10 +24,15 @@ concurrency:
 
 jobs:
   build:
+    # A CI run on main also completes when it fails or is cancelled.
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v7
+        with:
+          # The commit CI checked, which may be older than the tip of main.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - uses: actions/setup-node@v7
         with:
