@@ -10,17 +10,32 @@
 	 * - `nested`: issue #1's markup, a source with nested layers between two
 	 *   top-level layers;
 	 * - `late`: a layer between two others that mounts after them;
-	 * - `missing-before`: a layer whose `beforeId` names no layer.
+	 * - `missing-before`: a layer whose `beforeId` names no layer;
+	 * - `before-late`: a layer whose `beforeId` names a layer that mounts later;
+	 * - `move`: a layer between two others whose `beforeId` is `bBefore`;
+	 * - `rename`: a layer between two others whose id is `middleId`;
+	 * - `resource`: a layer between two others that reads the source `lineSource`.
 	 */
 	type Props = {
-		scenario: 'nested' | 'late' | 'missing-before';
-		/** In the `late` scenario, mounts the middle layer. */
+		scenario: 'nested' | 'late' | 'missing-before' | 'before-late' | 'move' | 'rename' | 'resource';
+		/** In the `late` and `before-late` scenarios, mounts the layer that comes late. */
 		showLate?: boolean;
+		bBefore?: string;
+		middleId?: string;
+		lineSource?: string;
 		onmapready?: (map: MapLibreMap) => void;
 		onerror?: (event: ErrorEvent) => void;
 	};
 
-	let { scenario, showLate = false, onmapready, onerror }: Props = $props();
+	let {
+		scenario,
+		showLate = false,
+		bBefore,
+		middleId = 'middle',
+		lineSource = 's1',
+		onmapready,
+		onerror
+	}: Props = $props();
 
 	let map = $state<MapLibreMap | null>(null);
 	let ready = $state(false);
@@ -71,8 +86,29 @@
 			<BackgroundLayer id="late" />
 		{/if}
 		<BackgroundLayer id="b" />
-	{:else}
+	{:else if scenario === 'missing-before'}
 		<BackgroundLayer id="a" />
 		<BackgroundLayer id="lost" beforeId="no-such-layer" />
+	{:else if scenario === 'before-late'}
+		<BackgroundLayer id="a" />
+		<BackgroundLayer id="under" beforeId="target" />
+		{#if showLate}
+			<BackgroundLayer id="target" />
+		{/if}
+		<BackgroundLayer id="b" />
+	{:else if scenario === 'move'}
+		<BackgroundLayer id="a" />
+		<BackgroundLayer id="b" beforeId={bBefore} />
+		<BackgroundLayer id="c" />
+	{:else if scenario === 'rename'}
+		<BackgroundLayer id="a" />
+		<BackgroundLayer id={middleId} />
+		<BackgroundLayer id="b" />
+	{:else}
+		<GeoJSONSource id="s1" data={grid} />
+		<GeoJSONSource id="s2" data={grid} />
+		<BackgroundLayer id="a" />
+		<LineLayer id="line" source={lineSource} />
+		<BackgroundLayer id="b" />
 	{/if}
 </MapLibre>

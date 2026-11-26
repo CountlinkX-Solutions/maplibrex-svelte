@@ -1,7 +1,8 @@
 <script lang="ts">
 	import type { GeoJSONSource } from 'maplibre-gl';
 	import { untrack, type Snippet } from 'svelte';
-	import { getMapContext, setSourceContext } from '../../context.js';
+	import { getMapContext, getStyleRegistry, setSourceContext } from '../../context.js';
+	import type { SourceRegistration } from '../../internal/registry.js';
 	import { planSourceUpdate, type AnySourceSpecification } from '../../internal/source.js';
 	import { removeLayersUsingSource, removeSourceIfPresent } from '../../internal/style-ops.js';
 
@@ -16,10 +17,19 @@
 	let { id, spec, children }: Props = $props();
 
 	const context = getMapContext();
+	const registry = getStyleRegistry();
 
 	let epoch = $state(0);
-	let mounted = $state(false);
-	let applied = $state<AnySourceSpecification | undefined>();
+	/** In the style now. */
+	let inStyle = $state(false);
+	/**
+	 * Added at least once. Children render from then on and stay through style
+	 * swaps and recreates, which take the source out of the style for a moment.
+	 */
+	let added = $state(false);
+	/** The specification in the style, to plan updates against. */
+	let applied: AnySourceSpecification | undefined;
+	let registration: SourceRegistration | undefined;
 
 	setSourceContext({
 		get id() {
@@ -30,26 +40,39 @@
 		}
 	});
 
-	// Add and remove. Re-runs when the map appears, when the style is replaced
-	// (which wipes user-added sources), and when the id itself changes.
+	// The registry decides when the source goes in: once the style is usable,
+	// and again after a style swap drops it. It takes the layers and other
+	// state that read the source out before removing it.
 	$effect(() => {
-		const map = context.map;
-		const ready = context.ready;
-		void context.styleEpoch;
 		const sourceId = id;
 
-		if (!map || !ready) return;
-
-		untrack(() => {
-			map.addSource(sourceId, spec);
-			applied = spec;
-			mounted = true;
+		const current = registry.addSource({
+			id: sourceId,
+			add: (map) => {
+				map.addSource(sourceId, spec);
+				if (!map.getSource(sourceId)) return false;
+				applied = spec;
+				inStyle = true;
+				added = true;
+			},
+			remove: (map) => {
+				inStyle = false;
+				applied = undefined;
+				// Layers the app added by hand would make MapLibre refuse the removal
+				// and leave the source behind, which a remount then trips over.
+				removeLayersUsingSource(map, sourceId);
+				removeSourceIfPresent(map, sourceId);
+			},
+			reset: () => {
+				inStyle = false;
+				applied = undefined;
+			}
 		});
+		registration = current;
 
 		return () => {
-			mounted = false;
-			applied = undefined;
-			removeSourceIfPresent(map, sourceId);
+			current.unregister();
+			if (registration === current) registration = undefined;
 		};
 	});
 
@@ -58,12 +81,9 @@
 	$effect(() => {
 		const map = context.map;
 		const nextSpec = spec;
-		if (!map || !mounted) return;
+		if (!map || !inStyle) return;
 
-		const plan = planSourceUpdate(
-			untrack(() => applied),
-			nextSpec
-		);
+		const plan = planSourceUpdate(applied, nextSpec);
 		if (plan.kind === 'noop' || plan.kind === 'create') return;
 
 		untrack(() => {
@@ -74,15 +94,14 @@
 				return;
 			}
 
-			removeLayersUsingSource(map, id);
-			removeSourceIfPresent(map, id);
-			map.addSource(id, nextSpec);
-			applied = nextSpec;
+			// Removes and adds the source again with the current spec, taking every
+			// layer that reads it out and back in at the same place.
+			registration?.recreate();
 			epoch += 1;
 		});
 	});
 </script>
 
-{#if mounted}
+{#if added}
 	{@render children?.({ id })}
 {/if}

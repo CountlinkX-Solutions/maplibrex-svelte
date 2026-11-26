@@ -8,6 +8,7 @@ import {
 	createEpochProbe,
 	createMapErrorLog,
 	flatDemTiles,
+	layerOrder,
 	readStyle,
 	swapStyle
 } from './fixtures/lifecycle.js';
@@ -65,10 +66,10 @@ describe('style swap (#13)', () => {
 		expect(map.getLayer('top-level')).toBeDefined();
 	});
 
-	// Expected to fail until #13 is fixed; remove `.fails` then. The nested layer
-	// re-adds before its source, MapLibre refuses it ("layers.points-circle:
-	// source "points" not found") and nothing adds it again.
-	it.fails('brings back a layer nested in a source', async () => {
+	// Before the registry, the nested layer re-added before its source, MapLibre
+	// refused it ("layers.points-circle: source "points" not found") and nothing
+	// added it again.
+	it('brings back a layer nested in a source', async () => {
 		const { map, rerender, probe } = await mountSwapStack();
 		expect(readStyle(map, { sources: ['points'], layers: ['points-circle'] })).toMatchObject({
 			sources: ['points'],
@@ -83,10 +84,21 @@ describe('style swap (#13)', () => {
 		});
 	});
 
-	// Expected to fail until #13 is fixed; remove `.fails` then. FeatureState
-	// re-applies before its source exists ("The source 'points' does not exist
-	// in the map's style."), so the recreated source has no state.
-	it.fails('keeps feature state applied', async () => {
+	it('brings the layers back in markup order, above the new basemap', async () => {
+		const { map, rerender, probe, errors } = await mountSwapStack();
+		const layers = ['base-a', 'base-b', 'top-level', 'points-circle'];
+		expect(layerOrder(map, layers)).toEqual(['base-a', 'top-level', 'points-circle']);
+
+		await swapStyle(rerender, probe, styleB);
+
+		expect(layerOrder(map, layers)).toEqual(['base-b', 'top-level', 'points-circle']);
+		expect(errors.messages()).toEqual([]);
+	});
+
+	// Before the registry, FeatureState re-applied before its source existed
+	// ("The source 'points' does not exist in the map's style."), so the
+	// recreated source had no state.
+	it('keeps feature state applied', async () => {
 		const { map, rerender, probe } = await mountSwapStack();
 		const target = { source: 'points', id: 1 };
 		expect(readStyle(map, { featureStates: [target] }).featureState).toEqual({
@@ -100,11 +112,10 @@ describe('style swap (#13)', () => {
 		});
 	});
 
-	// Expected to fail until #13 is fixed; remove `.fails` then. Terrain calls
-	// `setTerrain` before its source is back, which throws "cannot load terrain,
-	// because there exists no source with ID: dem" out of its effect, uncaught.
-	// The throw also stops the flush, so the dem source is not re-added either.
-	it.fails('re-applies terrain nested in a raster-dem source without throwing', async () => {
+	// Before the registry, Terrain called `setTerrain` before its source was
+	// back, which threw "cannot load terrain, because there exists no source
+	// with ID: dem" out of its effect, uncaught, and stopped the flush.
+	it('re-applies terrain nested in a raster-dem source without throwing', async () => {
 		const uncaught = captureUncaughtErrors();
 		const { screen, map, rerender, probe } = await mountSwapStack({ demTiles: flatDemTiles() });
 

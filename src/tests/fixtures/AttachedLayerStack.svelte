@@ -9,18 +9,36 @@
 	 * per `scenario`:
 	 * - `after`: the layer follows its source in the markup;
 	 * - `before`: the layer comes first in the markup;
-	 * - `together`: source and layer sit in one `{#if show}` block.
+	 * - `together`: source and layer sit in one `{#if show}` block;
+	 * - `together-nested`: the same with the layer nested in the source;
+	 * - `split`: source and layer in `{#if}` blocks of their own, source first;
+	 * - `split-before`: the same with the layer first;
+	 * - `rename`: a source whose id is `sourceId`, with a nested layer, a layer
+	 *   attached to `s` by a fixed id, and one attached by `sourceId`.
 	 */
 	type Props = {
-		scenario: 'after' | 'before' | 'together';
+		scenario:
+			'after' | 'before' | 'together' | 'together-nested' | 'split' | 'split-before' | 'rename';
 		/** A source option with no setter: changing it recreates the source. */
 		tolerance?: number;
 		show?: boolean;
+		showSource?: boolean;
+		showLayer?: boolean;
+		sourceId?: string;
 		onmapready?: (map: MapLibreMap) => void;
 		onerror?: (event: ErrorEvent) => void;
 	};
 
-	let { scenario, tolerance = 0.375, show = true, onmapready, onerror }: Props = $props();
+	let {
+		scenario,
+		tolerance = 0.375,
+		show = true,
+		showSource = true,
+		showLayer = true,
+		sourceId = 's',
+		onmapready,
+		onerror
+	}: Props = $props();
 
 	let map = $state<MapLibreMap | null>(null);
 	let ready = $state(false);
@@ -58,8 +76,36 @@
 	{:else if scenario === 'before'}
 		<CircleLayer id="attached" source="s" />
 		<GeoJSONSource id="s" data={points} />
-	{:else if show}
-		<GeoJSONSource id="s" data={points} />
-		<CircleLayer id="attached" source="s" />
+	{:else if scenario === 'together'}
+		{#if show}
+			<GeoJSONSource id="s" data={points} />
+			<CircleLayer id="attached" source="s" />
+		{/if}
+	{:else if scenario === 'together-nested'}
+		{#if show}
+			<GeoJSONSource id="s" data={points}>
+				<CircleLayer id="attached" />
+			</GeoJSONSource>
+		{/if}
+	{:else if scenario === 'split'}
+		{#if showSource}
+			<GeoJSONSource id="s" data={points} />
+		{/if}
+		{#if showLayer}
+			<CircleLayer id="attached" source="s" />
+		{/if}
+	{:else if scenario === 'split-before'}
+		{#if showLayer}
+			<CircleLayer id="attached" source="s" />
+		{/if}
+		{#if showSource}
+			<GeoJSONSource id="s" data={points} />
+		{/if}
+	{:else}
+		<GeoJSONSource id={sourceId} data={points}>
+			<CircleLayer id="nested" />
+		</GeoJSONSource>
+		<CircleLayer id="fixed" source="s" />
+		<CircleLayer id="following" source={sourceId} />
 	{/if}
 </MapLibre>
