@@ -136,7 +136,21 @@
 				instance.on('sourcedata', () => registry.sourcesChanged())
 			];
 
+			// A keyed `{#each}` moves layer anchors without running any effect, so
+			// the document around the map is watched for moves. Changes inside
+			// MapLibre's own container (markers, popups, controls) hold no anchor.
+			const observer = new MutationObserver((records) => {
+				const moved = records.some(
+					(record) => record.addedNodes.length > 0 && !element.contains(record.target)
+				);
+				if (moved) registry.reorder();
+			});
+			if (element.parentNode) {
+				observer.observe(element.parentNode, { childList: true, subtree: true });
+			}
+
 			return () => {
+				observer.disconnect();
 				for (const subscription of subscriptions) subscription.unsubscribe();
 				registry.stop();
 				ready = false;
