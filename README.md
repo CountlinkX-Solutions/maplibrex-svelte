@@ -63,7 +63,7 @@ Two other libraries cover the same ground. Both are mature, and both had release
 | ------------------------------------------------------------------------ | ------------------------------------- | ----------------- | ------------------------------------- |
 | [`svelte-maplibre`](https://www.npmjs.com/package/svelte-maplibre)       | bundled as a direct dependency (`^6`) | 5                 | d3-geo, dequal, just-compare, pmtiles |
 | [`svelte-maplibre-gl`](https://www.npmjs.com/package/svelte-maplibre-gl) | peer (`^5.19 \|\| ^6`)                | ≥5                | —                                     |
-| this one                                                                 | peer (`^6.7`)                         | ≥5.16, runes only | none                                  |
+| this one                                                                 | peer (`^6.10`)                        | ≥5.16, runes only | none                                  |
 
 **If you want something proven, use one of those two.** They have real users, real issues filed, and a track record this package does not have yet. This one is still at `0.1`, and the API has already moved once during its first week.
 
@@ -81,7 +81,7 @@ The template is dynamic, so no bundler can trace it. Vite never copies the worke
 
 ### With Vite (recommended)
 
-Add the plugin from `maplibrex-svelte/vite`. It serves the worker in dev and writes it into the build, under `maplibre/` below your app's base path, reading it from the installed `maplibre-gl` so it cannot drift from it. On `maplibre-gl` 6.7 to 6.12 it also copies `maplibre-gl-shared.mjs`, which those workers import by relative path. From 6.13 the worker is self-contained and the shared file is empty, so it copies the worker alone.
+Add the plugin from `maplibrex-svelte/vite`. It serves the worker in dev and writes it into the build, under `maplibre/` below your app's base path, reading it from the installed `maplibre-gl` so it cannot drift from it. On `maplibre-gl` 6.10 to 6.12 it also copies `maplibre-gl-shared.mjs`, which those workers import by relative path. From 6.13 the worker is self-contained and the shared file is empty, so it copies the worker alone.
 
 ```ts
 // vite.config.ts
@@ -120,7 +120,7 @@ The plugin hands the worker's URL to your app through a virtual module. Pass it 
 
 ### Without the plugin
 
-Without Vite, or to do it by hand, copy `maplibre-gl-worker.mjs` from `node_modules/maplibre-gl/dist` into a directory your app serves, and copy it again whenever you upgrade `maplibre-gl`. On 6.7 to 6.12, also copy `maplibre-gl-shared.mjs` **into the same directory**: those workers import it by relative path. Then point MapLibre at the copy before the first map is constructed, with your base path in front if the app is not served from the root:
+Without Vite, or to do it by hand, copy `maplibre-gl-worker.mjs` from `node_modules/maplibre-gl/dist` into a directory your app serves, and copy it again whenever you upgrade `maplibre-gl`. On 6.10 to 6.12, also copy `maplibre-gl-shared.mjs` **into the same directory**: those workers import it by relative path. Then point MapLibre at the copy before the first map is constructed, with your base path in front if the app is not served from the root:
 
 ```ts
 import { setWorkerUrl } from 'maplibre-gl';
@@ -128,7 +128,7 @@ import { setWorkerUrl } from 'maplibre-gl';
 setWorkerUrl('/maplibre/maplibre-gl-worker.mjs');
 ```
 
-Two things that look like fixes but are not: on 6.7 to 6.12, emitting only the worker with a Vite `?url` import leaves its shared chunk missing, and a bare side-effect import of your setup module is legal to tree-shake under a narrow `sideEffects` list. Call `setWorkerUrl` from code that runs, such as the root layout.
+Two things that look like fixes but are not: on 6.10 to 6.12, emitting only the worker with a Vite `?url` import leaves its shared chunk missing, and a bare side-effect import of your setup module is legal to tree-shake under a narrow `sideEffects` list. Call `setWorkerUrl` from code that runs, such as the root layout.
 
 ## Content-Security-Policy
 
@@ -156,7 +156,7 @@ Three things to check in your own app:
 |                |                                              |
 | -------------- | -------------------------------------------- |
 | Svelte         | 5.16 or later (runes)                        |
-| MapLibre GL JS | 6.7 or later                                 |
+| MapLibre GL JS | 6.10 or later                                |
 | TypeScript     | optional, but every component is fully typed |
 | Vite           | 5 to 8, only for `maplibrex-svelte/vite`     |
 
