@@ -14,11 +14,19 @@
 	 * - `split`: source and layer in `{#if}` blocks of their own, source first;
 	 * - `split-before`: the same with the layer first;
 	 * - `rename`: a source whose id is `sourceId`, with a nested layer, a layer
-	 *   attached to `s` by a fixed id, and one attached by `sourceId`.
+	 *   attached to `s` by a fixed id, and one attached by `sourceId`;
+	 * - `manual`: a layer attached to `manual`, a source no component adds.
 	 */
 	type Props = {
 		scenario:
-			'after' | 'before' | 'together' | 'together-nested' | 'split' | 'split-before' | 'rename';
+			| 'after'
+			| 'before'
+			| 'together'
+			| 'together-nested'
+			| 'split'
+			| 'split-before'
+			| 'rename'
+			| 'manual';
 		/** A source option with no setter: changing it recreates the source. */
 		tolerance?: number;
 		show?: boolean;
@@ -101,6 +109,8 @@
 		{#if showSource}
 			<GeoJSONSource id="s" data={points} />
 		{/if}
+	{:else if scenario === 'manual'}
+		<CircleLayer id="attached" source="manual" />
 	{:else}
 		<GeoJSONSource id={sourceId} data={points}>
 			<CircleLayer id="nested" />

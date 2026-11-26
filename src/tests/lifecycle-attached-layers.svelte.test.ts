@@ -167,4 +167,17 @@ describe('layers attached with source="id" (#14)', () => {
 		});
 		expect(errors.messages()).toEqual([]);
 	});
+
+	it('wait for a source the app adds by hand', async () => {
+		const { map, errors } = await mountAttached('manual');
+		expect(map.getLayer('attached')).toBeUndefined();
+
+		map.addSource('manual', {
+			type: 'geojson',
+			data: { type: 'FeatureCollection', features: [] }
+		});
+
+		await vi.waitFor(() => expect(map.getLayer('attached')?.source).toBe('manual'), WAIT);
+		expect(errors.messages()).toEqual([]);
+	});
 });
