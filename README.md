@@ -176,9 +176,9 @@ Four decisions shape the whole API.
 
 ### Root
 
-| Component    | Notes                                                                                                                     |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| `<MapLibre>` | Creates the map and provides context. `bind:map`, `bind:ready`, `bind:center`, `bind:zoom`, `bind:bearing`, `bind:pitch`. |
+| Component    | Notes                                                                                                                                                  |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `<MapLibre>` | Creates the map and provides context. `bind:map`, `bind:status`, `bind:error`, `bind:ready`, `bind:center`, `bind:zoom`, `bind:bearing`, `bind:pitch`. |
 
 Changing `mapStyle` swaps the style in place rather than recreating the map. A swap drops everything added to the previous style, so once the new style is usable the library puts back every source, layer, terrain and feature state in the tree, the layers in markup order above the new style's own, and the other style components apply themselves again.
 
@@ -190,7 +190,39 @@ Changing `mapStyle` swaps the style in place rather than recreating the map. A s
 
 `options` passes any other `MapOptions` to the MapLibre `Map` constructor. It is read once, when the map is created, and later changes to it have no effect. Use `bind:map` for anything you need to change at runtime.
 
-Errors MapLibre reports while the map runs, such as a style, tile, sprite or glyph request that fails or a style that does not validate, reach `onerror` with the `Error` in `event.error`. Without a handler, MapLibre writes them to the console.
+#### Status and errors
+
+`bind:status` says whether the map shows the current `mapStyle`: `'loading'` until the first style is shown and again while a new `mapStyle` loads, `'ready'` once it is shown, and `'error'` when the map could not be created or the current `mapStyle` failed to load. `bind:error` holds the `Error` behind an `'error'` status, and `null` otherwise. `bind:ready` keeps its earlier meaning: it turns `true` at the map's first `load` event, in the same update in which `status` first becomes `'ready'`, and stays `true` while a later style loads or after one fails.
+
+A style URL that cannot be fetched, or a style that does not validate, sets `status` to `'error'`. A tile, sprite, glyph or image that fails does not. Assigning another `mapStyle` loads it as usual, including when the first style failed or has not finished loading.
+
+When the browser cannot provide a WebGL2 context, MapLibre cannot create the map. Nothing is thrown: `status` becomes `'error'`, `error` holds MapLibre's `GPUInitializationError`, and the `fallback` snippet, if you pass one, is rendered inside the map container. Without `fallback` the container stays empty.
+
+```svelte
+<script lang="ts">
+	import { MapLibre, type MapLibreMap, type MapStatus } from 'maplibrex-svelte';
+
+	let mapStyle = $state('https://example.com/style.json');
+	let status = $state<MapStatus>('loading');
+	let error = $state<Error | null>(null);
+	let map = $state<MapLibreMap | null>(null);
+</script>
+
+<MapLibre {mapStyle} bind:status bind:error bind:map>
+	{#snippet fallback()}
+		<p>This map needs WebGL2, which this browser does not provide.</p>
+	{/snippet}
+</MapLibre>
+
+{#if status === 'error' && map}
+	<p role="alert">The map style could not be loaded: {error?.message}</p>
+	<button onclick={() => (mapStyle = 'https://example.com/simple-style.json')}
+		>Use the simple style</button
+	>
+{/if}
+```
+
+`onerror` receives the errors MapLibre reports while the map runs, such as a style, tile, sprite or glyph request that fails or a style that does not validate, with the `Error` in `event.error`, and the problems the library finds in the tree, described under [Design](#design). It is also called once when the map cannot be created, with an event the library builds: it has no `target`, since there is no map. Without a handler, all of these are written to the console.
 
 ```svelte
 <MapLibre mapStyle={style} onerror={(event) => reportMapError(event.error)} />

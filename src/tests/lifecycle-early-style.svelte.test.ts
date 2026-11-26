@@ -2,11 +2,13 @@ import { describe, expect, it, vi } from 'vitest';
 import { render } from 'vitest-browser-svelte';
 import type { Map as MapLibreMap, StyleSpecification } from 'maplibre-gl';
 import MapLibre from '#lib/components/MapLibre.svelte';
-import { WAIT, deferredStyleUrl, settle } from './fixtures/lifecycle.js';
+import FallbackStyleStack from './fixtures/FallbackStyleStack.svelte';
+import { WAIT, deferredStyleUrl, failingStyleUrl, settle } from './fixtures/lifecycle.js';
 
 /**
  * Issue #15 (audit D3): the style the map shows always ends up equal to the
- * current `mapStyle`, including when the prop changed before the first load.
+ * current `mapStyle`, including when the prop changed before the first load
+ * and when the first style failed.
  */
 
 const styleA: StyleSpecification = {
@@ -22,10 +24,10 @@ const styleB: StyleSpecification = {
 };
 
 describe('mapStyle before the first load (#15)', () => {
-	// Expected to fail until #15 is fixed; remove `.fails` then. The style effect
-	// waits for `load`, then records the current `mapStyle` as applied without
-	// calling `setStyle`, so the map keeps the style it was created with.
-	it.fails('ends up showing the style set while the first one was loading', async () => {
+	// Failed before the fix: the style effect waited for `load`, then recorded
+	// the current `mapStyle` as applied without calling `setStyle`, so the map
+	// kept the style it was created with.
+	it('ends up showing the style set while the first one was loading', async () => {
 		const first = deferredStyleUrl();
 		let map: MapLibreMap | null = null;
 
@@ -56,5 +58,51 @@ describe('mapStyle before the first load (#15)', () => {
 			},
 			{ timeout: 5_000 }
 		);
+	});
+
+	it('ends up on the first style when mapStyle changes and changes back before the first load', async () => {
+		const first = deferredStyleUrl();
+		let map: MapLibreMap | null = null;
+
+		const props = {
+			mapStyle: first.url as StyleSpecification | string,
+			onload: (event: { target: MapLibreMap }) => {
+				map = event.target;
+			},
+			style: 'width: 200px; height: 200px'
+		};
+
+		const screen = await render(MapLibre, props);
+		await screen.rerender({ ...props, mapStyle: styleB });
+		await screen.rerender({ ...props, mapStyle: first.url });
+		await settle();
+		expect(map).toBeNull();
+
+		first.resolve(styleA);
+		await vi.waitFor(() => expect(map).not.toBeNull(), WAIT);
+		await settle();
+
+		const loaded = map as unknown as MapLibreMap;
+		expect(loaded.getLayer('base-a')).toBeDefined();
+		expect(loaded.getLayer('base-b')).toBeUndefined();
+	});
+
+	// The second case from the issue: a fallback style assigned from `onerror`
+	// when the first one fails.
+	it('shows a fallback style assigned from onerror after the first style failed', async () => {
+		let map: MapLibreMap | null = null;
+
+		await render(FallbackStyleStack, {
+			mapStyle: failingStyleUrl('style unavailable'),
+			fallbackStyle: styleB,
+			onload: (event: { target: MapLibreMap }) => {
+				map = event.target;
+			}
+		});
+
+		await vi.waitFor(() => expect(map).not.toBeNull(), WAIT);
+		await settle();
+
+		expect((map as unknown as MapLibreMap).getLayer('base-b')).toBeDefined();
 	});
 });

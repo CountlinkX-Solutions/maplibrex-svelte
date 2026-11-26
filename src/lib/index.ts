@@ -70,6 +70,7 @@ export type {
 	CameraMode,
 	LayerEventProps,
 	MapEventProps,
+	MapStatus,
 	MarkerEventProps,
 	PopupEventProps
 } from './types.js';
