@@ -2,6 +2,7 @@
 	import type { StyleImageMetadata, StyleImageSource } from 'maplibre-gl';
 	import { untrack } from 'svelte';
 	import { getMapContext } from '../../context.js';
+	import { stableKey } from '../../internal/stable-key.js';
 	import { isStyleAlive } from '../../internal/style-ops.js';
 
 	type Props = Partial<StyleImageMetadata> & {
@@ -40,6 +41,10 @@
 		...(textFitWidth !== undefined ? { textFitWidth } : {}),
 		...(textFitHeight !== undefined ? { textFitHeight } : {})
 	} satisfies Partial<StyleImageMetadata>);
+	// MapLibre has no setter for an image's metadata, so a change registers
+	// the image anew. Compared by value: arrays such as `stretchX` are often
+	// written inline and are new on every render.
+	const metadataKey = $derived(stableKey(metadata));
 
 	// A style swap drops registered images along with everything else, so this
 	// tracks the style epoch like sources and layers do.
@@ -47,6 +52,7 @@
 		const map = context.map;
 		const ready = context.ready;
 		void context.styleEpoch;
+		void metadataKey;
 
 		const imageId = id;
 		const source = image;

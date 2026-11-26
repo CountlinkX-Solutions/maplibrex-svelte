@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render } from 'vitest-browser-svelte';
-import type { Map as MapLibreMap } from 'maplibre-gl';
+import type { Map as MapLibreMap, PositionAnchor } from 'maplibre-gl';
 import PopupStack from './fixtures/PopupStack.svelte';
 import MarkerPopupStack from './fixtures/MarkerPopupStack.svelte';
 
@@ -14,6 +14,10 @@ import MarkerPopupStack from './fixtures/MarkerPopupStack.svelte';
  * Also covers issue #42: options the consumer did not set must keep MapLibre's
  * defaults. The fixtures set none of `closeButton`, `closeOnClick` and
  * `focusAfterOpen`, so every user-close test below relies on those defaults.
+ *
+ * And issue #43: a rebuild does not reach the consumer's `onclose` either,
+ * and `className`, which MapLibre can change on a popup, is updated in place.
+ * The rebuild tests change `anchor`, which still has no setter upstream.
  */
 
 const WAIT = { timeout: 15_000 } as const;
@@ -27,8 +31,12 @@ async function mountPopup(fixture: Fixture) {
 	let map: MapLibreMap | null = null;
 	const reported: boolean[] = [];
 
+	const onclose = vi.fn();
+
 	const initialProps = {
 		className: 'first',
+		popupAnchor: undefined as PositionAnchor | undefined,
+		onclose,
 		onopenchange: (open: boolean) => reported.push(open),
 		onmapready: (instance: MapLibreMap) => {
 			map = instance;
@@ -45,6 +53,7 @@ async function mountPopup(fixture: Fixture) {
 	return {
 		map: map as unknown as MapLibreMap,
 		rerender,
+		onclose,
 		/** The value `bind:open` holds now. */
 		open: () => reported.at(-1)
 	};
@@ -64,16 +73,18 @@ function closeButton(map: MapLibreMap): HTMLButtonElement {
 
 describe('standalone popup', () => {
 	it('stays open when a constructor-only prop rebuilds it', async () => {
-		const { map, rerender, open } = await mountPopup(PopupStack);
+		const { map, rerender, open, onclose } = await mountPopup(PopupStack);
 		await vi.waitFor(() => expect(popupWithClass(map, 'first')).not.toBeNull(), WAIT);
+		const before = popupWithClass(map, 'first');
 
-		await rerender({ className: 'second' });
+		await rerender({ popupAnchor: 'top' });
 
 		await vi.waitFor(() => {
 			expect(open()).toBe(true);
-			expect(popupWithClass(map, 'second')).not.toBeNull();
+			expect(popupWithClass(map, 'maplibregl-popup-anchor-top')).not.toBeNull();
 		}, SETTLE);
-		expect(popupWithClass(map, 'first')).toBeNull();
+		expect(before?.isConnected).toBe(false);
+		expect(onclose).not.toHaveBeenCalled();
 	});
 
 	it('writes open = false when the user closes it', async () => {
@@ -89,17 +100,34 @@ describe('standalone popup', () => {
 	});
 
 	it('still reports a user close after a rebuild', async () => {
-		const { map, rerender, open } = await mountPopup(PopupStack);
+		const { map, rerender, open, onclose } = await mountPopup(PopupStack);
 		await vi.waitFor(() => expect(popupWithClass(map, 'first')).not.toBeNull(), WAIT);
-		await rerender({ className: 'second' });
-		await vi.waitFor(() => expect(popupWithClass(map, 'second')).not.toBeNull(), SETTLE);
+		await rerender({ popupAnchor: 'top' });
+		await vi.waitFor(
+			() => expect(popupWithClass(map, 'maplibregl-popup-anchor-top')).not.toBeNull(),
+			SETTLE
+		);
 
 		closeButton(map).click();
 
 		await vi.waitFor(() => {
 			expect(open()).toBe(false);
-			expect(popupWithClass(map, 'second')).toBeNull();
+			expect(popupWithClass(map, 'first')).toBeNull();
 		}, SETTLE);
+		expect(onclose).toHaveBeenCalledTimes(1);
+	});
+
+	it('changes className in place, without a new popup', async () => {
+		const { map, rerender, open, onclose } = await mountPopup(PopupStack);
+		await vi.waitFor(() => expect(popupWithClass(map, 'first')).not.toBeNull(), WAIT);
+		const before = popupWithClass(map, 'first');
+
+		await rerender({ className: 'second' });
+
+		await vi.waitFor(() => expect(popupWithClass(map, 'second')).toBe(before), SETTLE);
+		expect(before?.classList.contains('first')).toBe(false);
+		expect(open()).toBe(true);
+		expect(onclose).not.toHaveBeenCalled();
 	});
 });
 
@@ -147,27 +175,53 @@ describe('marker-attached popup', () => {
 	}
 
 	it('stays open when a constructor-only prop rebuilds it', async () => {
-		const { map, rerender, open } = await mountOpened();
+		const { map, rerender, open, onclose } = await mountOpened();
+		const before = popupWithClass(map, 'first');
+
+		await rerender({ popupAnchor: 'top' });
+
+		await vi.waitFor(() => {
+			expect(open()).toBe(true);
+			expect(popupWithClass(map, 'maplibregl-popup-anchor-top')).not.toBeNull();
+		}, SETTLE);
+		expect(before?.isConnected).toBe(false);
+		expect(onclose).not.toHaveBeenCalled();
+	});
+
+	it('still reports a user close after a rebuild', async () => {
+		const { map, rerender, open, onclose } = await mountOpened();
+		await rerender({ popupAnchor: 'top' });
+		await vi.waitFor(
+			() => expect(popupWithClass(map, 'maplibregl-popup-anchor-top')).not.toBeNull(),
+			SETTLE
+		);
+
+		closeButton(map).click();
+
+		await vi.waitFor(() => {
+			expect(open()).toBe(false);
+			expect(popupWithClass(map, 'first')).toBeNull();
+		}, SETTLE);
+		expect(onclose).toHaveBeenCalledTimes(1);
+	});
+
+	it('keeps a className changed in place when it opens again', async () => {
+		const { map, rerender, open, onclose } = await mountOpened();
+		const before = popupWithClass(map, 'first');
 
 		await rerender({ className: 'second' });
+		await vi.waitFor(() => expect(popupWithClass(map, 'second')).toBe(before), SETTLE);
+		expect(onclose).not.toHaveBeenCalled();
+
+		closeButton(map).click();
+		await vi.waitFor(() => expect(open()).toBe(false), SETTLE);
+		map.getContainer().querySelector<HTMLElement>('.maplibregl-marker')?.click();
 
 		await vi.waitFor(() => {
 			expect(open()).toBe(true);
 			expect(popupWithClass(map, 'second')).not.toBeNull();
 		}, SETTLE);
 		expect(popupWithClass(map, 'first')).toBeNull();
-	});
-
-	it('still reports a user close after a rebuild', async () => {
-		const { map, rerender, open } = await mountOpened();
-		await rerender({ className: 'second' });
-		await vi.waitFor(() => expect(popupWithClass(map, 'second')).not.toBeNull(), SETTLE);
-
-		closeButton(map).click();
-
-		await vi.waitFor(() => {
-			expect(open()).toBe(false);
-			expect(popupWithClass(map, 'second')).toBeNull();
-		}, SETTLE);
+		expect(onclose).toHaveBeenCalledTimes(1);
 	});
 });

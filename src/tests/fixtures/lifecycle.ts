@@ -301,6 +301,12 @@ export function pngUrl(): string {
 	return template.replace('{z}/{x}/{y}', 'image.png');
 }
 
+/** Vector tile URLs whose every tile is empty: a valid tile with no layers. */
+export function emptyVectorTiles(): string[] {
+	const scheme = registerScheme(async () => ({ data: new ArrayBuffer(0) }));
+	return [`${scheme}://{z}/{x}/{y}`];
+}
+
 /** A TileJSON URL that lists `tiles`, served without touching the network. */
 export function tileJsonUrl(tiles: string[]): string {
 	const scheme = registerScheme(async () => ({ data: { tilejson: '3.0.0', tiles } }));

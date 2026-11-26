@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { sameLngLat, sameNumber, toLngLatTuple } from './camera.js';
+import { sameCamera, sameLngLat, sameNumber, toLngLatTuple } from './camera.js';
 
 describe('toLngLatTuple', () => {
 	it('accepts an array pair', () => {
@@ -56,5 +56,23 @@ describe('sameNumber', () => {
 
 	it('is false when only one side is undefined', () => {
 		expect(sameNumber(4, undefined)).toBe(false);
+	});
+});
+
+describe('sameCamera', () => {
+	it('compares a center by position, whatever its shape', () => {
+		expect(sameCamera('center', [10, 20], { lng: 10, lat: 20 })).toBe(true);
+		expect(sameCamera('center', [10, 20], [10, 21])).toBe(false);
+	});
+
+	it('compares the other props as numbers within the epsilon', () => {
+		expect(sameCamera('zoom', 6, 6 + 1e-9)).toBe(true);
+		expect(sameCamera('bearing', 30, 31)).toBe(false);
+	});
+
+	it('treats a missing value as equal only to another missing value', () => {
+		expect(sameCamera('pitch', undefined, undefined)).toBe(true);
+		expect(sameCamera('pitch', 0, undefined)).toBe(false);
+		expect(sameCamera('center', undefined, [0, 0])).toBe(false);
 	});
 });

@@ -24,10 +24,15 @@ function keySetOf(handlers: Record<string, EventHandler>): string {
  * identity on every render, and re-subscribing on each of them would churn
  * listeners on a hot path. The indirection below always calls the current
  * handler, so the latest closure still wins.
+ *
+ * `deliver` is asked at the time of each event whether it reaches the
+ * handler, for events the component causes itself and keeps from the
+ * consumer, such as the `close` of a popup it replaces.
  */
 export function bindEvents(
 	getTarget: () => EventSource | null | undefined,
-	getProps: () => Record<string, unknown>
+	getProps: () => Record<string, unknown>,
+	deliver: (name: string) => boolean = () => true
 ): void {
 	const handlers = $derived(pickEventHandlers(getProps()));
 	const names = $derived(keySetOf(handlers));
@@ -39,7 +44,12 @@ export function bindEvents(
 
 		const subscriptions = untrack(() =>
 			Object.keys(handlers).map((name) =>
-				target.on(name as never, ((event: never) => handlers[name]?.(event)) as never)
+				target.on(
+					name as never,
+					((event: never) => {
+						if (deliver(name)) handlers[name]?.(event);
+					}) as never
+				)
 			)
 		);
 

@@ -188,7 +188,7 @@ Changing `mapStyle` swaps the style in place rather than recreating the map. A s
 <MapLibre mapStyle={style} interactions={{ scrollZoom: false, dragRotate: allowRotation }} />
 ```
 
-`options` passes any other `MapOptions` to the MapLibre `Map` constructor. It is read once, when the map is created, and later changes to it have no effect. Use `bind:map` for anything you need to change at runtime.
+`options` passes any other `MapOptions` to the MapLibre `Map` constructor. It is read once, when the map is created, and later changes to it have no effect, also for the options MapLibre can change at runtime, such as `minZoom`, `maxZoom` and `maxBounds`. Use `bind:map` for anything you need to change at runtime, with `map.setMinZoom`, `map.setMaxZoom`, `map.setMaxBounds` and the like.
 
 #### Status and errors
 
@@ -398,6 +398,8 @@ Terrain, sky, light and projection are properties of the style rather than entri
 ## Two-way camera binding
 
 `bind:center`, `bind:zoom`, `bind:bearing`, and `bind:pitch` are genuinely bidirectional. Panning writes back to your state; assigning to your state moves the map. The loop is broken by comparison, not by a mutex: an update that matches where the map already is does nothing. `cameraMode` picks how prop-driven moves animate — `'jump'`, `'ease'` (default), or `'fly'`.
+
+While the map animates, every frame is written back, so a bound prop always shows where the map is. A value you assign is a target the map keeps moving to until it gets there: assigning `zoom`, then `center` while the map is still zooming, ends at both. A gesture, or a camera call you make on the map, ends the move where it leaves the camera, and the props follow the map from there.
 
 ## Escape hatches
 

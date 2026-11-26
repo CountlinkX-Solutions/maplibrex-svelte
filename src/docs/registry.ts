@@ -74,7 +74,8 @@ const LAYER_PROPS: PropDoc[] = [
 	{
 		name: 'sourceLayer',
 		type: 'string',
-		description: 'Required for vector tile sources with more than one layer.'
+		description:
+			'Required for vector tile sources with more than one layer. MapLibre has no setter for it, so a change adds the layer anew, in the same place.'
 	},
 	{ name: 'paint', type: 'object', description: 'Paint properties, pushed key by key on change.' },
 	{
@@ -83,8 +84,18 @@ const LAYER_PROPS: PropDoc[] = [
 		description: 'Layout properties, pushed key by key on change.'
 	},
 	{ name: 'filter', type: 'FilterSpecification', description: 'Applied through setFilter.' },
-	{ name: 'minzoom', type: 'number', description: 'Lower zoom bound for the layer.' },
-	{ name: 'maxzoom', type: 'number', description: 'Upper zoom bound for the layer.' },
+	{
+		name: 'minzoom',
+		type: 'number',
+		description:
+			'Lower zoom bound for the layer, changed through setLayerZoomRange. Unsetting it adds the layer anew, in the same place, since the setter cannot remove a bound.'
+	},
+	{
+		name: 'maxzoom',
+		type: 'number',
+		description:
+			'Upper zoom bound for the layer, changed through setLayerZoomRange. Unsetting it adds the layer anew, in the same place, since the setter cannot remove a bound.'
+	},
 	{
 		name: 'visible',
 		type: 'boolean',
@@ -100,7 +111,8 @@ const LAYER_PROPS: PropDoc[] = [
 	{
 		name: 'metadata',
 		type: 'unknown',
-		description: 'Stored on the layer when it is added. Later changes are not applied.'
+		description:
+			'Stored on the layer. Compared by value; MapLibre has no setter for it, so a change adds the layer anew, in the same place.'
 	},
 	{
 		name: 'children',
@@ -204,7 +216,8 @@ export const COMPONENTS: ComponentDoc[] = [
 			{
 				name: 'padding',
 				type: 'PaddingOptions',
-				description: 'Insets the viewport, moving the vanishing point off centre.'
+				description:
+					'Insets the viewport, moving the vanishing point off centre. Unsetting it goes back to no padding.'
 			},
 			{
 				name: 'interactions',
@@ -215,7 +228,7 @@ export const COMPONENTS: ComponentDoc[] = [
 				name: 'options',
 				type: "Partial<Omit<MapOptions, 'container' | 'style'>>",
 				description:
-					'Any other MapOptions, passed to the Map constructor. Read once, when the map is created: later changes have no effect.'
+					'Any other MapOptions, passed to the Map constructor. Read once, when the map is created: later changes have no effect, also for minZoom, maxZoom, minPitch, maxPitch, maxBounds and renderWorldCopies, which MapLibre can change at runtime through setMinZoom, setMaxZoom, setMinPitch, setMaxPitch, setMaxBounds and setRenderWorldCopies on bind:map.'
 			},
 			{ name: 'class', type: 'string', description: 'Applied to the map container element.' },
 			{
@@ -257,6 +270,7 @@ export const COMPONENTS: ComponentDoc[] = [
 			'A map with no height renders nothing. The container fills its parent by default, so give the parent a height or pass one through style.',
 			'Changing mapStyle swaps the style rather than recreating the map. Once the replacement is usable, the library puts back every source, layer, terrain and feature state in the tree, the layers in markup order, and the other style components apply themselves again.',
 			'Two-way camera binding terminates by comparison, not a mutex: an update that matches where the map already is does nothing.',
+			'Each camera prop you assign is a target the map keeps moving to until it gets there, so assigning zoom and then center during the animation ends at both. A gesture, or a camera call on the map, ends the move, and the props follow the map from there.',
 			'onmoveend, onmove and the other camera events fire for moves made from code too, and some arrive during setup, before anyone touches the map: MapLibre jumps to the style camera when the style loads if you gave no center, zoom or bounds, and moves when the container changes size. This component also moves the map when padding changes and when center, zoom, bearing or pitch disagree with it. To react only to the person, check event.originalEvent: gestures carry the DOM event that started them, moves from code carry none.',
 			'onerror receives errors MapLibre reports while the map runs, such as a failed style, tile, sprite or glyph request, with the Error in event.error, and what the library finds wrong in the tree: a beforeId naming no layer, or a layer, terrain or feature state waiting for a source that no component provides once the style has loaded. It is also called once when the map cannot be created, with an event that has no target. Without a handler, these errors are written to the console.',
 			"status tells a style that is still loading from one that failed: a style URL that cannot be fetched or a style that does not validate sets it to 'error', with the reason in error. Assigning another mapStyle, for example a fallback from onerror, loads it as usual. Tile, sprite and glyph failures do not change status.",
@@ -1096,7 +1110,8 @@ export const COMPONENTS: ComponentDoc[] = [
 		notes: [
 			'Only the content snippet replaces the pin. Nesting a Popup leaves the default pin intact — deciding this from children instead once produced an invisible 0x0 marker for exactly the documented pattern.',
 			'With draggable, bind:lngLat reflects the drag as it happens.',
-			'Markers are DOM, not WebGL. Hundreds are fine; thousands are not — use a CircleLayer or SymbolLayer instead.'
+			'Markers are DOM, not WebGL. Hundreds are fine; thousands are not — use a CircleLayer or SymbolLayer instead.',
+			'offset, draggable, rotation, rotationAlignment, pitchAlignment, opacity, opacityWhenCovered and subpixelPositioning change in place, and unsetting one goes back to the default MapLibre uses without it. color, scale, anchor, className and clickTolerance have no setter upstream, so changing or unsetting one builds a new marker.'
 		],
 		examples: [
 			'Add a default marker',
@@ -1176,7 +1191,9 @@ export const COMPONENTS: ComponentDoc[] = [
 		notes: [
 			'Nested inside a Marker, the marker handles open and close on click. Standalone, the open prop drives it.',
 			'bind:open stays truthful after a close button click or a closeOnClick, because the popup reports its own state back.',
-			'closeButton, closeOnClick, closeOnMove, focusAfterOpen, anchor, className and locationOccludedOpacity have no setter upstream, so changing one builds a new popup. An open popup stays open, and bind:open does not change.'
+			'closeButton, closeOnClick, closeOnMove, focusAfterOpen, anchor and locationOccludedOpacity have no setter upstream, so changing one builds a new popup. An open popup stays open, bind:open does not change, and onclose is not called.',
+			'className changes in place, and the popup keeps it when it opens again.',
+			'maxWidth, offset, padding and subpixelPositioning change in place, and unsetting one goes back to the default MapLibre uses without it. Unsetting lngLat leaves a standalone popup where it was, as MapLibre has no default position.'
 		],
 		examples: [
 			'Display a popup',
@@ -1376,6 +1393,7 @@ export const COMPONENTS: ComponentDoc[] = [
 		],
 		notes: [
 			'Re-registers itself after a style swap, since a swap drops registered images along with everything else.',
+			'pixelRatio, sdf, stretchX, stretchY, content, textFitWidth and textFitHeight are compared by value. MapLibre has no setter for them, so a change registers the image anew, which loads a url again.',
 			'Updates rather than re-adds when the id is already taken: addImage throws on a duplicate.'
 		],
 		examples: [
