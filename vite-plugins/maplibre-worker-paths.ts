@@ -3,6 +3,9 @@
  * `setWorkerUrl`. Kept in its own module with NO imports on purpose: pulling
  * these constants out of the plugin module dragged `node:fs` into the client
  * bundle, which Vite externalises and which then throws on first render.
+ *
+ * The shared chunk is listed for maplibre-gl releases before 6.13, whose
+ * worker imports it. From 6.13 it is an empty, deprecated file.
  */
 export const WORKER_FILES = ['maplibre-gl-worker.mjs', 'maplibre-gl-shared.mjs'] as const;
 

@@ -59,11 +59,11 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 
 Two other libraries cover the same ground. Both are mature, and both had releases in November 2026, when this comparison was written:
 
-|                                                                          | maplibre-gl                           | Svelte        | Runtime dependencies                  |
-| ------------------------------------------------------------------------ | ------------------------------------- | ------------- | ------------------------------------- |
-| [`svelte-maplibre`](https://www.npmjs.com/package/svelte-maplibre)       | bundled as a direct dependency (`^6`) | 5             | d3-geo, dequal, just-compare, pmtiles |
-| [`svelte-maplibre-gl`](https://www.npmjs.com/package/svelte-maplibre-gl) | peer (`^5.19 \|\| ^6`)                | ≥5            | —                                     |
-| this one                                                                 | peer (`^6`)                           | 5, runes only | none                                  |
+|                                                                          | maplibre-gl                           | Svelte            | Runtime dependencies                  |
+| ------------------------------------------------------------------------ | ------------------------------------- | ----------------- | ------------------------------------- |
+| [`svelte-maplibre`](https://www.npmjs.com/package/svelte-maplibre)       | bundled as a direct dependency (`^6`) | 5                 | d3-geo, dequal, just-compare, pmtiles |
+| [`svelte-maplibre-gl`](https://www.npmjs.com/package/svelte-maplibre-gl) | peer (`^5.19 \|\| ^6`)                | ≥5                | —                                     |
+| this one                                                                 | peer (`^6`)                           | ≥5.16, runes only | none                                  |
 
 **If you want something proven, use one of those two.** They have real users, real issues filed, and a track record this package does not have yet. This one is still at `0.1`, and the API has already moved once during its first week.
 
@@ -79,7 +79,7 @@ new URL(`./${workerFileName}`, import.meta.url);
 
 The template is dynamic, so no bundler can trace it. Vite never copies the worker beside the bundled chunk, and in a **production build** the request 404s. The failure is quiet and easy to misdiagnose: the map loads, the canvas appears, controls work — and every source renders as empty background, because nothing parses tiles or GeoJSON.
 
-Copy both worker files somewhere your app serves, keeping them **in the same directory** (the worker imports its sibling shared chunk by relative path), then point MapLibre at the copy before the first map is constructed:
+Copy `maplibre-gl-worker.mjs` somewhere your app serves, then point MapLibre at the copy before the first map is constructed. On `maplibre-gl` releases before 6.13, also copy `maplibre-gl-shared.mjs` **into the same directory**: those workers import it by relative path. From 6.13 the worker is self-contained and the shared file is empty.
 
 ```ts
 import { setWorkerUrl } from 'maplibre-gl';
@@ -87,15 +87,15 @@ import { setWorkerUrl } from 'maplibre-gl';
 setWorkerUrl('/maplibre/maplibre-gl-worker.mjs');
 ```
 
-This repository does it with a small Vite plugin in `vite-plugins/maplibre-worker.ts` that reads both files out of `node_modules` at build time, so they cannot drift from the installed version. Copy it if you want the same behaviour.
+This repository does it with a small Vite plugin in `vite-plugins/maplibre-worker.ts` that reads the worker (and, before 6.13, its shared chunk) out of `node_modules` at build time, so they cannot drift from the installed version. Copy it if you want the same behaviour.
 
-Two things that look like fixes but are not: emitting only the worker with a `?url` import leaves its shared chunk missing, and a bare side-effect import of your setup module is legal to tree-shake under a narrow `sideEffects` list — export a function and call it instead.
+Two things that look like fixes but are not: before 6.13, emitting only the worker with a `?url` import leaves its shared chunk missing, and a bare side-effect import of your setup module is legal to tree-shake under a narrow `sideEffects` list — export a function and call it instead.
 
 ## Content-Security-Policy
 
 Since 0.1.1 the library writes no inline `style` attributes: the elements it keeps out of sight until MapLibre takes them over use the `hidden` attribute. Its one CSS rule, which sizes the map container, is ordinary Svelte component CSS and ends up wherever your build puts component styles (a CSS file in a Vite production build).
 
-What MapLibre itself needs, checked against the `maplibre-gl` version this repository tests with (6.6):
+What MapLibre itself needs, checked against `maplibre-gl` 6.6 and not yet re-checked against later releases:
 
 | Directive           | Why                                                                                                                                                                           |
 | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -116,7 +116,7 @@ Three things to check in your own app:
 
 |                |                                              |
 | -------------- | -------------------------------------------- |
-| Svelte         | 5 (runes)                                    |
+| Svelte         | 5.16 or later (runes)                        |
 | MapLibre GL JS | 6                                            |
 | TypeScript     | optional, but every component is fully typed |
 
