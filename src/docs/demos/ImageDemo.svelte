@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { browser } from '$app/environment';
-	import { GeoJSONSource, Image, MapLibre, SymbolLayer } from '$lib/index.js';
+	import { browser } from '$app/env';
+	import { GeoJSONSource, Image, MapLibre, SymbolLayer } from '#lib/index.js';
 	import DemoFrame from '../ui/DemoFrame.svelte';
 	import { CITIES, DEMO_STYLE, ringIcon } from './data.js';
 

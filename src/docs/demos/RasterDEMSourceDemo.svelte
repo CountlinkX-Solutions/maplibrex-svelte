@@ -5,7 +5,7 @@
 		NavigationControl,
 		RasterDEMSource,
 		Terrain
-	} from '$lib/index.js';
+	} from '#lib/index.js';
 	import DemoFrame from '../ui/DemoFrame.svelte';
 	import { OSM_STYLE, TERRAIN_TILEJSON } from './data.js';
 

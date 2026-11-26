@@ -7,7 +7,7 @@
 		MapLibre,
 		NavigationControl,
 		VectorSource
-	} from '$lib/index.js';
+	} from '#lib/index.js';
 	import DemoFrame from '../ui/DemoFrame.svelte';
 	import { DEMOTILES_VECTOR } from './data.js';
 

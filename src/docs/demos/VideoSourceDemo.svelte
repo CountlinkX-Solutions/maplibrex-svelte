@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { MapLibre, NavigationControl, RasterLayer, VideoSource } from '$lib/index.js';
+	import { MapLibre, NavigationControl, RasterLayer, VideoSource } from '#lib/index.js';
 	import DemoFrame from '../ui/DemoFrame.svelte';
 	import { DRONE_CORNERS, DRONE_VIDEO, OSM_STYLE } from './data.js';
 

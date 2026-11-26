@@ -14,7 +14,7 @@
 		Popup,
 		Projection,
 		ScaleControl
-	} from '$lib/index.js';
+	} from '#lib/index.js';
 	import { CITIES, DEMO_STYLE, grid } from '../../docs/demos/data.js';
 
 	const cells = grid();

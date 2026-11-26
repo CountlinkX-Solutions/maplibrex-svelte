@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { MapLibre, NavigationControl, RasterLayer, RasterSource } from '$lib/index.js';
+	import { MapLibre, NavigationControl, RasterLayer, RasterSource } from '#lib/index.js';
 	import DemoFrame from '../ui/DemoFrame.svelte';
 	import { BLANK_STYLE } from './data.js';
 

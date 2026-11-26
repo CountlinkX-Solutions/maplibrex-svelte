@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { IControl, Map as MapLibreMap, Subscription } from 'maplibre-gl';
-	import { Control, MapLibre, NavigationControl } from '$lib/index.js';
+	import { Control, MapLibre, NavigationControl } from '#lib/index.js';
 	import DemoFrame from '../ui/DemoFrame.svelte';
 	import { DEMO_STYLE } from './data.js';
 

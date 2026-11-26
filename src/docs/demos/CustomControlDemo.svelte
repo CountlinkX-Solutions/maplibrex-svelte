@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { LngLatLike } from 'maplibre-gl';
-	import { CustomControl, MapLibre, NavigationControl } from '$lib/index.js';
+	import { CustomControl, MapLibre, NavigationControl } from '#lib/index.js';
 	import DemoFrame from '../ui/DemoFrame.svelte';
 	import { DEMO_STYLE } from './data.js';
 

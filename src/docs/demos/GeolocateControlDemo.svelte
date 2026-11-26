@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { GeolocateControl as MapLibreGeolocateControl } from 'maplibre-gl';
-	import { GeolocateControl, MapLibre, NavigationControl } from '$lib/index.js';
+	import { GeolocateControl, MapLibre, NavigationControl } from '#lib/index.js';
 	import DemoFrame from '../ui/DemoFrame.svelte';
 	import { DEMO_STYLE } from './data.js';
 

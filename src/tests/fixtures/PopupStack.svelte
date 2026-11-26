@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Map as MapLibreMap, StyleSpecification } from 'maplibre-gl';
-	import MapLibre from '$lib/components/MapLibre.svelte';
-	import Popup from '$lib/components/overlays/Popup.svelte';
+	import MapLibre from '#lib/components/MapLibre.svelte';
+	import Popup from '#lib/components/overlays/Popup.svelte';
 
 	type Props = {
 		/** Constructor-only: changing it makes the component build a new popup. */

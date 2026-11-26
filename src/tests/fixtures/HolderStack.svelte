@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { Map as MapLibreMap, StyleSpecification } from 'maplibre-gl';
-	import MapLibre from '$lib/components/MapLibre.svelte';
-	import CustomControl from '$lib/components/controls/CustomControl.svelte';
-	import Marker from '$lib/components/overlays/Marker.svelte';
-	import Popup from '$lib/components/overlays/Popup.svelte';
+	import MapLibre from '#lib/components/MapLibre.svelte';
+	import CustomControl from '#lib/components/controls/CustomControl.svelte';
+	import Marker from '#lib/components/overlays/Marker.svelte';
+	import Popup from '#lib/components/overlays/Popup.svelte';
 
 	type Props = {
 		onmapready?: (map: MapLibreMap) => void;

@@ -6,7 +6,7 @@
 		GlobalState,
 		MapLibre,
 		NavigationControl
-	} from '$lib/index.js';
+	} from '#lib/index.js';
 	import DemoFrame from '../ui/DemoFrame.svelte';
 	import { DEMOTILES_VECTOR, scatter } from './data.js';
 

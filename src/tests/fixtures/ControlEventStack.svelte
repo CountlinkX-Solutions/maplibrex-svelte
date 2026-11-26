@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { Evented } from 'maplibre-gl';
 	import type { IControl, StyleSpecification } from 'maplibre-gl';
-	import Control from '$lib/components/controls/Control.svelte';
-	import MapLibre from '$lib/components/MapLibre.svelte';
+	import Control from '#lib/components/controls/Control.svelte';
+	import MapLibre from '#lib/components/MapLibre.svelte';
 
 	type Props = {
 		onready?: (event: { type: 'ready'; label: string }) => void;

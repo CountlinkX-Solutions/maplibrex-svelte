@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { ControlPosition } from 'maplibre-gl';
-	import { LogoControl, MapLibre } from '$lib/index.js';
+	import { LogoControl, MapLibre } from '#lib/index.js';
 	import DemoFrame from '../ui/DemoFrame.svelte';
 	import { DEMO_STYLE } from './data.js';
 

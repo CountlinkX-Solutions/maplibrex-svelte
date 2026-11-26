@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { SourceSpecification } from 'maplibre-gl';
-	import { CircleLayer, MapLibre, NavigationControl, Source, SymbolLayer } from '$lib/index.js';
+	import { CircleLayer, MapLibre, NavigationControl, Source, SymbolLayer } from '#lib/index.js';
 	import DemoFrame from '../ui/DemoFrame.svelte';
 	import { DEMO_STYLE, scatter } from './data.js';
 

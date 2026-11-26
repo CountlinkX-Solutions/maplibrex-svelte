@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { MercatorCoordinate } from 'maplibre-gl';
 	import type { CustomLayerInterface, Map as MapLibreMap } from 'maplibre-gl';
-	import { CustomLayer, MapLibre, NavigationControl } from '$lib/index.js';
+	import { CustomLayer, MapLibre, NavigationControl } from '#lib/index.js';
 	import DemoFrame from '../ui/DemoFrame.svelte';
 	import { DEMO_STYLE } from './data.js';
 

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { Map as MapLibreMap, StyleSpecification } from 'maplibre-gl';
-	import MapLibre from '$lib/components/MapLibre.svelte';
-	import GeoJSONSource from '$lib/components/sources/GeoJSONSource.svelte';
-	import FeatureState from '$lib/components/data/FeatureState.svelte';
+	import MapLibre from '#lib/components/MapLibre.svelte';
+	import GeoJSONSource from '#lib/components/sources/GeoJSONSource.svelte';
+	import FeatureState from '#lib/components/data/FeatureState.svelte';
 
 	type Props = {
 		hovered?: boolean;

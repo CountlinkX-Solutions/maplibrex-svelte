@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { MapLibre, NavigationControl, Projection } from '$lib/index.js';
+	import { MapLibre, NavigationControl, Projection } from '#lib/index.js';
 	import DemoFrame from '../ui/DemoFrame.svelte';
 	import { DEMO_STYLE } from './data.js';
 
