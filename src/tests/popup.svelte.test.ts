@@ -18,6 +18,9 @@ import MarkerPopupStack from './fixtures/MarkerPopupStack.svelte';
  * And issue #43: a rebuild does not reach the consumer's `onclose` either,
  * and `className`, which MapLibre can change on a popup, is updated in place.
  * The rebuild tests change `anchor`, which still has no setter upstream.
+ *
+ * And issue #62: `onopen` is called for every open, including the first one
+ * of a popup that starts open, and, like `onclose`, not for a rebuild.
  */
 
 const WAIT = { timeout: 15_000 } as const;
@@ -32,11 +35,14 @@ async function mountPopup(fixture: Fixture) {
 	const reported: boolean[] = [];
 
 	const onclose = vi.fn();
+	const onopen = vi.fn();
 
 	const initialProps = {
 		className: 'first',
 		popupAnchor: undefined as PositionAnchor | undefined,
+		reopen: undefined as number | undefined,
 		onclose,
+		onopen,
 		onopenchange: (open: boolean) => reported.push(open),
 		onmapready: (instance: MapLibreMap) => {
 			map = instance;
@@ -54,6 +60,7 @@ async function mountPopup(fixture: Fixture) {
 		map: map as unknown as MapLibreMap,
 		rerender,
 		onclose,
+		onopen,
 		/** The value `bind:open` holds now. */
 		open: () => reported.at(-1)
 	};
@@ -159,21 +166,25 @@ describe('options left unset', () => {
 	});
 });
 
+function clickMarker(map: MapLibreMap): void {
+	const pin = map.getContainer().querySelector<HTMLElement>('.maplibregl-marker');
+	if (!pin) throw new Error('no marker element');
+	pin.click();
+}
+
+async function mountOpened() {
+	const mounted = await mountPopup(MarkerPopupStack);
+
+	clickMarker(mounted.map);
+	await vi.waitFor(() => {
+		expect(mounted.open()).toBe(true);
+		expect(popupWithClass(mounted.map, 'first')).not.toBeNull();
+	}, WAIT);
+
+	return mounted;
+}
+
 describe('marker-attached popup', () => {
-	async function mountOpened() {
-		const mounted = await mountPopup(MarkerPopupStack);
-		const pin = mounted.map.getContainer().querySelector<HTMLElement>('.maplibregl-marker');
-		if (!pin) throw new Error('no marker element');
-
-		pin.click();
-		await vi.waitFor(() => {
-			expect(mounted.open()).toBe(true);
-			expect(popupWithClass(mounted.map, 'first')).not.toBeNull();
-		}, WAIT);
-
-		return mounted;
-	}
-
 	it('stays open when a constructor-only prop rebuilds it', async () => {
 		const { map, rerender, open, onclose } = await mountOpened();
 		const before = popupWithClass(map, 'first');
@@ -223,5 +234,62 @@ describe('marker-attached popup', () => {
 		}, SETTLE);
 		expect(popupWithClass(map, 'first')).toBeNull();
 		expect(onclose).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe('onopen (#62)', () => {
+	it('is called when a standalone popup starts open', async () => {
+		const { map, onopen } = await mountPopup(PopupStack);
+		await vi.waitFor(() => expect(popupWithClass(map, 'first')).not.toBeNull(), WAIT);
+
+		await vi.waitFor(() => expect(onopen).toHaveBeenCalledTimes(1), SETTLE);
+	});
+
+	it('is not called when a standalone popup is rebuilt, and is for a later open', async () => {
+		const { map, rerender, open, onopen } = await mountPopup(PopupStack);
+		await vi.waitFor(() => expect(popupWithClass(map, 'first')).not.toBeNull(), WAIT);
+		const opened = onopen.mock.calls.length;
+
+		await rerender({ popupAnchor: 'top' });
+		await vi.waitFor(
+			() => expect(popupWithClass(map, 'maplibregl-popup-anchor-top')).not.toBeNull(),
+			SETTLE
+		);
+		expect(onopen).toHaveBeenCalledTimes(opened);
+
+		closeButton(map).click();
+		await vi.waitFor(() => expect(open()).toBe(false), SETTLE);
+		await rerender({ popupAnchor: 'top', reopen: 1 });
+
+		await vi.waitFor(() => {
+			expect(open()).toBe(true);
+			expect(onopen).toHaveBeenCalledTimes(opened + 1);
+		}, SETTLE);
+	});
+
+	it('is called when the marker opens an attached popup', async () => {
+		const { onopen } = await mountOpened();
+
+		expect(onopen).toHaveBeenCalledTimes(1);
+	});
+
+	it('is not called when an attached popup is rebuilt, and is for a later open', async () => {
+		const { map, rerender, open, onopen } = await mountOpened();
+
+		await rerender({ popupAnchor: 'top' });
+		await vi.waitFor(
+			() => expect(popupWithClass(map, 'maplibregl-popup-anchor-top')).not.toBeNull(),
+			SETTLE
+		);
+		expect(onopen).toHaveBeenCalledTimes(1);
+
+		closeButton(map).click();
+		await vi.waitFor(() => expect(open()).toBe(false), SETTLE);
+		clickMarker(map);
+
+		await vi.waitFor(() => {
+			expect(open()).toBe(true);
+			expect(onopen).toHaveBeenCalledTimes(2);
+		}, SETTLE);
 	});
 });

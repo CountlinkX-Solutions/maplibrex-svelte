@@ -15,12 +15,21 @@
 		popupAnchor?: PositionAnchor;
 		/** Passed to the popup as its `onclose` handler. */
 		onclose?: () => void;
+		/** Passed to the popup as its `onopen` handler. */
+		onopen?: () => void;
 		/** Reports every value `bind:open` takes, so the test can read it back. */
 		onopenchange?: (open: boolean) => void;
 		onmapready?: (map: MapLibreMap) => void;
 	};
 
-	let { className = 'first', popupAnchor, onclose, onopenchange, onmapready }: Props = $props();
+	let {
+		className = 'first',
+		popupAnchor,
+		onclose,
+		onopen,
+		onopenchange,
+		onmapready
+	}: Props = $props();
 
 	let map = $state<MapLibreMap | null>(null);
 	let ready = $state(false);
@@ -48,7 +57,7 @@
 	<!-- Attached: the marker opens the popup, `bind:open` only reports it.
 	     No closeButton: the user-close test relies on MapLibre's default. -->
 	<Marker lngLat={[0, 0]}>
-		<Popup {className} anchor={popupAnchor} {onclose} bind:open>
+		<Popup {className} anchor={popupAnchor} {onclose} {onopen} bind:open>
 			<p data-testid="popup-content">Attached</p>
 		</Popup>
 	</Marker>
