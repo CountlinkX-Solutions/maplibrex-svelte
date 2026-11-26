@@ -47,15 +47,30 @@ ${CLOSE_SCRIPT}
   </MapLibre>
 </div>`;
 
-	const workerSetup = `import { setWorkerUrl } from 'maplibre-gl';
+	const workerConfig = `// vite.config.ts
+import { sveltekit } from '@sveltejs/kit/vite';
+import { maplibreWorker } from 'maplibrex-svelte/vite';
+import { defineConfig } from 'vite';
 
-// Before maplibre-gl 6.13 the worker imports a shared chunk
-// by relative path, so both files must sit in the same
-// directory. Add your base path in front if the app is not
-// served from the root.
-export function configureMapLibreWorker() {
-  setWorkerUrl('/maplibre/maplibre-gl-worker.mjs');
-}`;
+export default defineConfig({
+  plugins: [maplibreWorker(), sveltekit()]
+});`;
+
+	const workerLayout = `<!-- src/routes/+layout.svelte -->
+<script lang="ts">
+  import { setWorkerUrl } from 'maplibre-gl';
+  import { workerUrl } from 'virtual:maplibrex-svelte/worker';
+
+  // Before the first map is created.
+  setWorkerUrl(workerUrl);
+
+  let { children } = $props();
+${CLOSE_SCRIPT}
+
+{@render children()}`;
+
+	const workerTypes = `// src/app.d.ts, first line
+/// <reference types="maplibrex-svelte/vite/client" />`;
 
 	const principles = [
 		{
@@ -132,23 +147,27 @@ export function configureMapLibreWorker() {
 			every source renders as empty background because nothing parses tiles or GeoJSON.
 		</p>
 		<p>
-			Copy <code>maplibre-gl-worker.mjs</code> from <code>node_modules/maplibre-gl/dist</code> into
-			a directory your app serves, and point MapLibre at the copy before the first map is created.
-			On releases before 6.13, also copy <code>maplibre-gl-shared.mjs</code> into the same directory:
-			the worker imports it.
+			Add the plugin from <code>maplibrex-svelte/vite</code> and pass the URL it hands over to
+			<code>setWorkerUrl</code> before the first map is created. It serves the worker in dev and
+			writes it into the build, under <code>maplibre/</code> below your base path, read from the
+			installed <code>maplibre-gl</code> so it always matches. On releases before 6.13 it also
+			copies
+			<code>maplibre-gl-shared.mjs</code>, which those workers import. The URL carries the base path
+			and the maplibre-gl version.
 		</p>
 		<p class="fineprint">
-			This site copies them with a small Vite plugin that reads them from
-			<code>node_modules</code> at build time, so they always match the installed version:
-			<a
-				href="https://github.com/CountlinkX-Solutions/maplibrex-svelte/blob/main/vite-plugins/maplibre-worker.ts"
-				rel="noreferrer"
-				target="_blank">vite-plugins/maplibre-worker.ts</a
-			>. Call the function once before the first map is created, in SvelteKit from the root layout.
-			Do not rely on a module imported only for its side effect: the bundler may drop it.
+			Without Vite, copy <code>maplibre-gl-worker.mjs</code> from
+			<code>node_modules/maplibre-gl/dist</code> into a directory your app serves (before 6.13, with
+			<code>maplibre-gl-shared.mjs</code> beside it) and pass its URL, base path included, to
+			<code>setWorkerUrl</code>. Call it from code that runs, such as the root layout: a module
+			imported only for its side effect may be dropped by the bundler.
 		</p>
 	</div>
-	<CodeBlock code={workerSetup} language="ts" />
+	<div class="stack">
+		<CodeBlock code={workerConfig} language="ts" />
+		<CodeBlock code={workerLayout} />
+		<CodeBlock code={workerTypes} language="ts" />
+	</div>
 </section>
 
 <section>
@@ -273,6 +292,12 @@ export function configureMapLibreWorker() {
 
 	.split p {
 		color: var(--text-muted);
+	}
+
+	.stack {
+		display: grid;
+		gap: 1rem;
+		min-width: 0;
 	}
 
 	.fineprint {

@@ -230,7 +230,7 @@ export const COMPONENTS: ComponentDoc[] = [
 			'Two-way camera binding terminates by comparison, not a mutex: an update that matches where the map already is does nothing.',
 			'onmoveend, onmove and the other camera events fire for moves made from code too, and some arrive during setup, before anyone touches the map: MapLibre jumps to the style camera when the style loads if you gave no center, zoom or bounds, and moves when the container changes size. This component also moves the map when padding changes and when center, zoom, bearing or pitch disagree with it. To react only to the person, check event.originalEvent: gestures carry the DOM event that started them, moves from code carry none.',
 			'onerror receives errors MapLibre reports while the map runs, such as a failed style, tile, sprite or glyph request, with the Error in event.error. Without a handler, MapLibre logs them to the console.',
-			'A production build needs the worker step described on the home page. Without it the map and its controls appear, but every source renders as empty background.'
+			'Set up the MapLibre worker before the first map is created. With Vite, add maplibreWorker() from maplibrex-svelte/vite to the Vite config and pass the workerUrl it provides through virtual:maplibrex-svelte/worker to setWorkerUrl; the home page shows the setup, and the steps without Vite. Without the worker the map and its controls appear in a production build, but every source renders as empty background.'
 		],
 		examples: [
 			'Display a map',

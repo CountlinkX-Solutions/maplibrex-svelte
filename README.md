@@ -79,7 +79,48 @@ new URL(`./${workerFileName}`, import.meta.url);
 
 The template is dynamic, so no bundler can trace it. Vite never copies the worker beside the bundled chunk, and in a **production build** the request 404s. The failure is quiet and easy to misdiagnose: the map loads, the canvas appears, controls work — and every source renders as empty background, because nothing parses tiles or GeoJSON.
 
-Copy `maplibre-gl-worker.mjs` somewhere your app serves, then point MapLibre at the copy before the first map is constructed. On `maplibre-gl` releases before 6.13, also copy `maplibre-gl-shared.mjs` **into the same directory**: those workers import it by relative path. From 6.13 the worker is self-contained and the shared file is empty.
+### With Vite (recommended)
+
+Add the plugin from `maplibrex-svelte/vite`. It serves the worker in dev and writes it into the build, under `maplibre/` below your app's base path, reading it from the installed `maplibre-gl` so it cannot drift from it. On `maplibre-gl` 6.0 to 6.12 it also copies `maplibre-gl-shared.mjs`, which those workers import by relative path. From 6.13 the worker is self-contained and the shared file is empty, so it copies the worker alone.
+
+```ts
+// vite.config.ts
+import { sveltekit } from '@sveltejs/kit/vite';
+import { maplibreWorker } from 'maplibrex-svelte/vite';
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+	plugins: [maplibreWorker(), sveltekit()]
+});
+```
+
+The plugin hands the worker's URL to your app through a virtual module. Pass it to `setWorkerUrl` before the first map is created; in SvelteKit, in the root layout:
+
+```svelte
+<!-- src/routes/+layout.svelte -->
+<script lang="ts">
+	import { setWorkerUrl } from 'maplibre-gl';
+	import { workerUrl } from 'virtual:maplibrex-svelte/worker';
+
+	setWorkerUrl(workerUrl);
+
+	let { children } = $props();
+</script>
+
+{@render children()}
+```
+
+`workerUrl` includes the base path, and a `?v=` query with the `maplibre-gl` version so that a browser never pairs a cached older worker with a newer bundle. For its type, reference the plugin's client types once, for example on the first line of `src/app.d.ts` (`src/vite-env.d.ts` in a plain Vite app):
+
+```ts
+/// <reference types="maplibrex-svelte/vite/client" />
+```
+
+`vite` is an optional peer dependency of this package, needed only for this entry. The plugin works with Vite 5 to 8.
+
+### Without the plugin
+
+Without Vite, or to do it by hand, copy `maplibre-gl-worker.mjs` from `node_modules/maplibre-gl/dist` into a directory your app serves, and copy it again whenever you upgrade `maplibre-gl`. On 6.0 to 6.12, also copy `maplibre-gl-shared.mjs` **into the same directory**: those workers import it by relative path. Then point MapLibre at the copy before the first map is constructed, with your base path in front if the app is not served from the root:
 
 ```ts
 import { setWorkerUrl } from 'maplibre-gl';
@@ -87,9 +128,7 @@ import { setWorkerUrl } from 'maplibre-gl';
 setWorkerUrl('/maplibre/maplibre-gl-worker.mjs');
 ```
 
-This repository does it with a small Vite plugin in `vite-plugins/maplibre-worker.ts` that reads the worker (and, before 6.13, its shared chunk) out of `node_modules` at build time, so they cannot drift from the installed version. Copy it if you want the same behaviour.
-
-Two things that look like fixes but are not: before 6.13, emitting only the worker with a `?url` import leaves its shared chunk missing, and a bare side-effect import of your setup module is legal to tree-shake under a narrow `sideEffects` list — export a function and call it instead.
+Two things that look like fixes but are not: on 6.0 to 6.12, emitting only the worker with a Vite `?url` import leaves its shared chunk missing, and a bare side-effect import of your setup module is legal to tree-shake under a narrow `sideEffects` list. Call `setWorkerUrl` from code that runs, such as the root layout.
 
 ## Content-Security-Policy
 
@@ -119,6 +158,7 @@ Three things to check in your own app:
 | Svelte         | 5.16 or later (runes)                        |
 | MapLibre GL JS | 6                                            |
 | TypeScript     | optional, but every component is fully typed |
+| Vite           | 5 to 8, only for `maplibrex-svelte/vite`     |
 
 ## Design
 

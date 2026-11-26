@@ -53,11 +53,24 @@
 			"svelte": "./dist/index.js",
 			"default": "./dist/index.js"
 		},
+		"./vite": {
+			"types": "./dist/vite/index.d.ts",
+			"default": "./dist/vite/index.js"
+		},
+		"./vite/client": {
+			"types": "./dist/vite/client.d.ts"
+		},
 		"./package.json": "./package.json"
 	},
 	"peerDependencies": {
 		"maplibre-gl": "^6.0.0",
-		"svelte": "^5.16.0"
+		"svelte": "^5.16.0",
+		"vite": "^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0"
+	},
+	"peerDependenciesMeta": {
+		"vite": {
+			"optional": true
+		}
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
