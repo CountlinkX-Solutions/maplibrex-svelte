@@ -5,7 +5,7 @@
 		Light,
 		MapLibre,
 		NavigationControl
-	} from '$lib/index.js';
+	} from '#lib/index.js';
 	import DemoFrame from '../ui/DemoFrame.svelte';
 	import { OSM_STYLE, blocks } from './data.js';
 

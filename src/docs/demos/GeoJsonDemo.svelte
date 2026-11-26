@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { CircleLayer, GeoJSONSource, MapLibre, NavigationControl } from '$lib/index.js';
+	import { CircleLayer, GeoJSONSource, MapLibre, NavigationControl } from '#lib/index.js';
 	import DemoFrame from '../ui/DemoFrame.svelte';
 	import { CITIES, DEMO_STYLE } from './data.js';
 

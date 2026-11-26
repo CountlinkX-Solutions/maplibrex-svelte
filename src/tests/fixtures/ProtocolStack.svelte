@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { AddProtocolAction, Map as MapLibreMap, StyleSpecification } from 'maplibre-gl';
-	import MapLibre from '$lib/components/MapLibre.svelte';
-	import GeoJSONSource from '$lib/components/sources/GeoJSONSource.svelte';
-	import Protocol from '$lib/components/data/Protocol.svelte';
+	import MapLibre from '#lib/components/MapLibre.svelte';
+	import GeoJSONSource from '#lib/components/sources/GeoJSONSource.svelte';
+	import Protocol from '#lib/components/data/Protocol.svelte';
 
 	type Props = {
 		scheme: string;

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import 'maplibre-gl/dist/maplibre-gl.css';
 	import { configureMapLibreWorker } from '../docs/worker.js';
-	import { browser } from '$app/environment';
+	import { browser } from '$app/env';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import type { Snippet } from 'svelte';

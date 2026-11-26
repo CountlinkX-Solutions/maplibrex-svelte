@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { ExpressionSpecification } from 'maplibre-gl';
-	import { GeoJSONSource, LineLayer, MapLibre, NavigationControl } from '$lib/index.js';
+	import { GeoJSONSource, LineLayer, MapLibre, NavigationControl } from '#lib/index.js';
 	import DemoFrame from '../ui/DemoFrame.svelte';
 	import { DEMO_STYLE, route } from './data.js';
 

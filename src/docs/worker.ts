@@ -1,5 +1,6 @@
 import { setWorkerUrl } from 'maplibre-gl';
-import { base } from '$app/paths';
+import { asset } from '$app/paths';
+import type { AssetPath } from '$app/types';
 import { MAPLIBRE_WORKER_PATH } from '../../vite-plugins/maplibre-worker-paths.js';
 
 let configured = false;
@@ -19,6 +20,8 @@ let configured = false;
 export function configureMapLibreWorker(): void {
 	if (configured) return;
 
-	setWorkerUrl(`${base}${MAPLIBRE_WORKER_PATH}`);
+	// `asset()` adds the base path. Its type lists only files in `static/`, and
+	// the worker is emitted by the plugin instead, hence the cast.
+	setWorkerUrl(asset(MAPLIBRE_WORKER_PATH.slice(1) as AssetPath));
 	configured = true;
 }

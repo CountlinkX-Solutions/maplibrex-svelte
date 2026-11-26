@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { FillLayer, LineLayer, MapLibre, NavigationControl, VectorSource } from '$lib/index.js';
+	import { FillLayer, LineLayer, MapLibre, NavigationControl, VectorSource } from '#lib/index.js';
 	import DemoFrame from '../ui/DemoFrame.svelte';
 	import { BLANK_STYLE, DEMOTILES_VECTOR } from './data.js';
 

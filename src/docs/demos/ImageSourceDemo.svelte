@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { browser } from '$app/environment';
-	import { ImageSource, MapLibre, NavigationControl, RasterLayer } from '$lib/index.js';
+	import { browser } from '$app/env';
+	import { ImageSource, MapLibre, NavigationControl, RasterLayer } from '#lib/index.js';
 	import DemoFrame from '../ui/DemoFrame.svelte';
 	import { DEMO_STYLE, overlayImageUrl, type Corners } from './data.js';
 

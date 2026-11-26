@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { FeatureState, FillLayer, GeoJSONSource, LineLayer, MapLibre } from '$lib/index.js';
+	import { FeatureState, FillLayer, GeoJSONSource, LineLayer, MapLibre } from '#lib/index.js';
 	import DemoFrame from '../ui/DemoFrame.svelte';
 	import { DEMO_STYLE, grid } from './data.js';
 

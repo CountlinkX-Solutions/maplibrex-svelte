@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { GeoJSONSource, HeatmapLayer, MapLibre, NavigationControl } from '$lib/index.js';
+	import { GeoJSONSource, HeatmapLayer, MapLibre, NavigationControl } from '#lib/index.js';
 	import DemoFrame from '../ui/DemoFrame.svelte';
 	import { DEMO_STYLE, scatter } from './data.js';
 

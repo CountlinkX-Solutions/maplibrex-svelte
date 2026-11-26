@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { FullscreenControl, MapLibre, NavigationControl } from '$lib/index.js';
+	import { FullscreenControl, MapLibre, NavigationControl } from '#lib/index.js';
 	import DemoFrame from '../ui/DemoFrame.svelte';
 	import { DEMO_STYLE } from './data.js';
 </script>

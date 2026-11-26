@@ -6,15 +6,15 @@
 		SkySpecification,
 		StyleSpecification
 	} from 'maplibre-gl';
-	import MapLibre from '$lib/components/MapLibre.svelte';
-	import GeoJSONSource from '$lib/components/sources/GeoJSONSource.svelte';
-	import CustomLayer from '$lib/components/layers/CustomLayer.svelte';
-	import FeatureState from '$lib/components/data/FeatureState.svelte';
-	import GlobalState from '$lib/components/style/GlobalState.svelte';
-	import Image from '$lib/components/style/Image.svelte';
-	import Light from '$lib/components/style/Light.svelte';
-	import Projection from '$lib/components/style/Projection.svelte';
-	import Sky from '$lib/components/style/Sky.svelte';
+	import MapLibre from '#lib/components/MapLibre.svelte';
+	import GeoJSONSource from '#lib/components/sources/GeoJSONSource.svelte';
+	import CustomLayer from '#lib/components/layers/CustomLayer.svelte';
+	import FeatureState from '#lib/components/data/FeatureState.svelte';
+	import GlobalState from '#lib/components/style/GlobalState.svelte';
+	import Image from '#lib/components/style/Image.svelte';
+	import Light from '#lib/components/style/Light.svelte';
+	import Projection from '#lib/components/style/Projection.svelte';
+	import Sky from '#lib/components/style/Sky.svelte';
 
 	type Props = {
 		/** Toggles every style-level component at once, to test restore on unmount. */

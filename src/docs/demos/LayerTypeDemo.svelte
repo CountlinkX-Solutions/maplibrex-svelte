@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { LayerSpecification } from 'maplibre-gl';
-	import { GeoJSONSource, Layer, MapLibre, NavigationControl } from '$lib/index.js';
+	import { GeoJSONSource, Layer, MapLibre, NavigationControl } from '#lib/index.js';
 	import DemoFrame from '../ui/DemoFrame.svelte';
 	import { DEMO_STYLE, scatter } from './data.js';
 

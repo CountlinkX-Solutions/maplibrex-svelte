@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { GlobeControl, MapLibre, NavigationControl } from '$lib/index.js';
+	import { GlobeControl, MapLibre, NavigationControl } from '#lib/index.js';
 	import DemoFrame from '../ui/DemoFrame.svelte';
 	import { DEMO_STYLE } from './data.js';
 </script>

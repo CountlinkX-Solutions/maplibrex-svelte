@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { ExpressionSpecification } from 'maplibre-gl';
-	import { ColorReliefLayer, MapLibre, NavigationControl, RasterDEMSource } from '$lib/index.js';
+	import { ColorReliefLayer, MapLibre, NavigationControl, RasterDEMSource } from '#lib/index.js';
 	import DemoFrame from '../ui/DemoFrame.svelte';
 	import { BLANK_STYLE, TERRAIN_TILEJSON } from './data.js';
 

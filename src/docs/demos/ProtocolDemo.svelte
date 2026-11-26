@@ -7,7 +7,7 @@
 		NavigationControl,
 		Protocol,
 		SymbolLayer
-	} from '$lib/index.js';
+	} from '#lib/index.js';
 	import DemoFrame from '../ui/DemoFrame.svelte';
 	import { CITIES, DEMO_FONT, DEMO_STYLE } from './data.js';
 

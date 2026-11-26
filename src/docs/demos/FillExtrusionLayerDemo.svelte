@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { FillExtrusionLayer, GeoJSONSource, MapLibre, NavigationControl } from '$lib/index.js';
+	import { FillExtrusionLayer, GeoJSONSource, MapLibre, NavigationControl } from '#lib/index.js';
 	import DemoFrame from '../ui/DemoFrame.svelte';
 	import { OSM_STYLE, blocks } from './data.js';
 

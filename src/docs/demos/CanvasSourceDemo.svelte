@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { CanvasSource, MapLibre, NavigationControl, RasterLayer } from '$lib/index.js';
+	import { CanvasSource, MapLibre, NavigationControl, RasterLayer } from '#lib/index.js';
 	import DemoFrame from '../ui/DemoFrame.svelte';
 	import { DEMO_STYLE, type Corners } from './data.js';
 
