@@ -6,6 +6,7 @@
 	import { page } from '$app/state';
 	import type { Snippet } from 'svelte';
 	import { COMPONENTS_BY_CATEGORY } from '../docs/registry.js';
+	import { siteNav } from '../docs/site-nav.js';
 
 	// Must run before the first map is constructed.
 	configureMapLibreWorker();
@@ -19,7 +20,8 @@
 	);
 	let navOpen = $state(false);
 
-	const showSidebar = $derived(page.url.pathname.startsWith('/docs'));
+	const nav = $derived(siteNav(page));
+	const showSidebar = $derived(nav.sidebar);
 
 	function toggleTheme() {
 		theme = theme === 'dark' ? 'light' : 'dark';
@@ -48,10 +50,8 @@
 	</a>
 
 	<nav class="topnav">
-		<a href={resolve('/docs')} class:active={page.url.pathname.startsWith('/docs')}>Components</a>
-		<a href={resolve('/playground')} class:active={page.url.pathname.startsWith('/playground')}>
-			Playground
-		</a>
+		<a href={resolve('/docs')} class:active={nav.section === '/docs'}>Components</a>
+		<a href={resolve('/playground')} class:active={nav.section === '/playground'}>Playground</a>
 	</nav>
 
 	<div class="actions">
@@ -92,7 +92,7 @@
 							<li>
 								<a
 									href={resolve('/docs/[slug]', { slug: component.slug })}
-									class:active={page.url.pathname === `/docs/${component.slug}`}
+									class:active={nav.component === component.slug}
 								>
 									{component.name}
 								</a>
