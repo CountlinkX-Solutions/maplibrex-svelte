@@ -5,6 +5,7 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import type { Snippet } from 'svelte';
+	import { GUIDES } from '../docs/guides.js';
 	import { COMPONENTS_BY_CATEGORY } from '../docs/registry.js';
 	import { siteNav } from '../docs/site-nav.js';
 
@@ -51,6 +52,7 @@
 
 	<nav class="topnav">
 		<a href={resolve('/docs')} class:active={nav.section === '/docs'}>Components</a>
+		<a href={resolve('/guides')} class:active={nav.section === '/guides'}>Guides</a>
 		<a href={resolve('/playground')} class:active={nav.section === '/playground'}>Playground</a>
 	</nav>
 
@@ -75,7 +77,7 @@
 				class="icon-button drawer-toggle"
 				onclick={() => (navOpen = !navOpen)}
 				aria-expanded={navOpen}
-				aria-label="Toggle component navigation">☰</button
+				aria-label="Toggle documentation navigation">☰</button
 			>
 		{/if}
 	</div>
@@ -84,7 +86,21 @@
 <div class="shell" class:with-sidebar={showSidebar}>
 	{#if showSidebar}
 		<aside class="sidebar" class:open={navOpen}>
-			<nav aria-label="Components">
+			<nav aria-label="Documentation">
+				<p class="group-label">Guides</p>
+				<ul>
+					{#each GUIDES as guide (guide.slug)}
+						<li>
+							<a
+								href={resolve('/guides/[slug]', { slug: guide.slug })}
+								class:active={nav.guide === guide.slug}
+							>
+								{guide.title}
+							</a>
+						</li>
+					{/each}
+				</ul>
+
 				{#each COMPONENTS_BY_CATEGORY as category (category.id)}
 					<p class="group-label">{category.title}</p>
 					<ul>

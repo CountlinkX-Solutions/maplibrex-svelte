@@ -6,14 +6,16 @@ export type NavPage = {
 
 export type SiteNav = {
 	/** The top-level section the reader is in, for the top bar highlight. */
-	section: '/docs' | '/playground' | null;
-	/** Whether the component sidebar is shown. */
+	section: '/docs' | '/guides' | '/playground' | null;
+	/** Whether the sidebar listing the guides and components is shown. */
 	sidebar: boolean;
 	/** Slug of the component page being read, for the sidebar highlight. */
 	component: string | null;
+	/** Slug of the guide being read, for the sidebar highlight. */
+	guide: string | null;
 };
 
-const SECTIONS = ['/docs', '/playground'] as const;
+const SECTIONS = ['/docs', '/guides', '/playground'] as const;
 
 /**
  * Where the reader is on the docs site.
@@ -31,7 +33,8 @@ export function siteNav(page: NavPage): SiteNav {
 
 	return {
 		section,
-		sidebar: section === '/docs',
-		component: id === '/docs/[slug]' ? (page.params.slug ?? null) : null
+		sidebar: section === '/docs' || section === '/guides',
+		component: id === '/docs/[slug]' ? (page.params.slug ?? null) : null,
+		guide: id === '/guides/[slug]' ? (page.params.slug ?? null) : null
 	};
 }

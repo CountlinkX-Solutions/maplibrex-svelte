@@ -25,14 +25,37 @@ describe('siteNav on the published site', () => {
 	it('shows the sidebar and highlights the component on a component page', () => {
 		const nav = siteNav(pageAt(`${PAGES}/docs/marker/`, '/docs/[slug]', { slug: 'marker' }));
 
-		expect(nav).toEqual({ section: '/docs', sidebar: true, component: 'marker' });
+		expect(nav).toEqual({ section: '/docs', sidebar: true, component: 'marker', guide: null });
 	});
 
 	it('shows the sidebar on the components index', () => {
 		expect(siteNav(pageAt(`${PAGES}/docs/`, '/docs'))).toEqual({
 			section: '/docs',
 			sidebar: true,
-			component: null
+			component: null,
+			guide: null
+		});
+	});
+
+	it('shows the sidebar and highlights the guide on a guide page', () => {
+		const nav = siteNav(
+			pageAt(`${PAGES}/guides/layer-order/`, '/guides/[slug]', { slug: 'layer-order' })
+		);
+
+		expect(nav).toEqual({
+			section: '/guides',
+			sidebar: true,
+			component: null,
+			guide: 'layer-order'
+		});
+	});
+
+	it('shows the sidebar on the guides index', () => {
+		expect(siteNav(pageAt(`${PAGES}/guides/`, '/guides'))).toEqual({
+			section: '/guides',
+			sidebar: true,
+			component: null,
+			guide: null
 		});
 	});
 
@@ -40,7 +63,8 @@ describe('siteNav on the published site', () => {
 		expect(siteNav(pageAt(`${PAGES}/playground/`, '/playground'))).toEqual({
 			section: '/playground',
 			sidebar: false,
-			component: null
+			component: null,
+			guide: null
 		});
 	});
 
@@ -55,7 +79,11 @@ describe('siteNav without a base path', () => {
 		expect(siteNav(pageAt('/docs/marker', '/docs/[slug]', { slug: 'marker' }))).toEqual({
 			section: '/docs',
 			sidebar: true,
-			component: 'marker'
+			component: 'marker',
+			guide: null
 		});
+		expect(
+			siteNav(pageAt('/guides/switching-styles', '/guides/[slug]', { slug: 'switching-styles' }))
+		).toEqual({ section: '/guides', sidebar: true, component: null, guide: 'switching-styles' });
 	});
 });
