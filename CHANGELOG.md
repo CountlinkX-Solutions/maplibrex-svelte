@@ -39,6 +39,10 @@ Sources, layers and style-level state now follow the component tree reliably, an
 - Each layer component renders an empty `<div hidden data-maplibrex="layer">` beside the map container, which is how the library reads markup order. Server rendering emits none.
 - `Source`, `Layer`, `CustomLayer`, `Terrain`, `FeatureState`, `Light`, `Sky`, `Projection` and `GlobalState` must be rendered inside `<MapLibre>`. A context built by hand with `setMapContext` is no longer enough for them.
 
+### Documentation
+
+- Docs site: guides to switching styles, layer order, and errors and fallback (#26).
+
 ## 0.2.0
 
 Toolchain and packaging. No component changed: everything that was in the 0.1.1 package is byte-identical in this one.

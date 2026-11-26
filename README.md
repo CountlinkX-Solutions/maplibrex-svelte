@@ -4,6 +4,8 @@ Component-oriented [MapLibre GL JS](https://maplibre.org/) bindings for Svelte 5
 
 **[Documentation and live demos →](https://countlinkx-solutions.github.io/maplibrex-svelte/)** — every component on its own page, with a working map you can drive.
 
+Guides cover what goes beyond one component: [switching styles](https://countlinkx-solutions.github.io/maplibrex-svelte/guides/switching-styles/), [layer order](https://countlinkx-solutions.github.io/maplibrex-svelte/guides/layer-order/), and [errors and fallback](https://countlinkx-solutions.github.io/maplibrex-svelte/guides/errors-and-fallback/).
+
 You describe the map as a component tree. The library keeps that tree and the imperative MapLibre instance in sync — adding, updating in place, and tearing down in the right order.
 
 ```svelte
@@ -439,13 +441,15 @@ The component surface is derived from the [official MapLibre GL JS examples](htt
 
 ## Documentation site
 
-`npm run dev` serves a documentation site alongside the library: a page per component with a live demo, generated from a single hand-written registry (`src/docs/registry.ts`), plus a playground. Nothing checks the registry against the component types yet, so update it with the component.
+`npm run dev` serves a documentation site alongside the library: a page per component with a live demo, generated from a single hand-written registry (`src/docs/registry.ts`), guides listed in `src/docs/guides.ts` with their text in `src/docs/guides/`, plus a playground. Nothing checks the registry or the guides against the components yet, so update them with the component.
 
 | Route               | What it is                                                                      |
 | ------------------- | ------------------------------------------------------------------------------- |
 | `/`                 | Overview, install, and the design decisions                                     |
 | `/docs`             | Every component, grouped by what it does                                        |
 | `/docs/<component>` | Live demo, usage, props, gotchas, and the official examples it covers           |
+| `/guides`           | The guides: switching styles, layer order, errors and fallback                  |
+| `/guides/<guide>`   | One guide, with runnable samples                                                |
 | `/playground`       | One map wired to a source, layers, feature state, overlays and controls at once |
 
 The site lives outside `src/lib`, so none of it reaches the published package.
