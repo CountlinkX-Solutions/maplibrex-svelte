@@ -101,7 +101,7 @@ ${CLOSE_SCRIPT}
 </svelte:head>
 
 <section class="hero">
-	<p class="eyebrow">Svelte 5 · MapLibre GL JS 6 · TypeScript</p>
+	<p class="eyebrow">Svelte 5 · MapLibre GL JS 6.7+ · TypeScript</p>
 	<h1>Describe the map as a component tree.</h1>
 	<p class="lede">
 		It keeps that tree and the imperative MapLibre instance in agreement — adding, updating in
