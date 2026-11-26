@@ -338,7 +338,7 @@ Layer-scoped events are typed:
 
 ### Style state
 
-Terrain, sky, light and projection are properties of the style rather than entries in it. These components apply them on mount and **put back what the style declared** on unmount, so mounting one inside an `{#if}` is a safe way to turn an effect on and off. Like layers, they wait for a style that can take them: one mounted while a new `mapStyle` loads, or after one failed, is applied once a style has loaded, and every one is applied again after a style swap.
+Terrain, sky, light and projection are properties of the style rather than entries in it. These components apply them on mount and **put back what the style declared** on unmount, read from the style shown at that moment, also after a style swap, so mounting one inside an `{#if}` is a safe way to turn an effect on and off. Like layers, they wait for a style that can take them: one mounted while a new `mapStyle` loads, or after one failed, is applied once a style has loaded, and every one is applied again after a style swap.
 
 ```svelte
 <RasterDEMSource id="dem" tiles={[demUrl]} encoding="terrarium">
@@ -350,7 +350,7 @@ Terrain, sky, light and projection are properties of the style rather than entri
 <Projection type="globe" />
 ```
 
-`<Terrain>` inherits its source id from an enclosing `<RasterDEMSource>`, the same way layers do.
+`<Terrain>` inherits its source id from an enclosing `<RasterDEMSource>`, the same way layers do. Changing `exaggeration` updates the terrain in place.
 
 `<Image>` registers an icon for `icon-image` to reference, from a URL or from pixels you already have, and re-registers it after a style swap:
 

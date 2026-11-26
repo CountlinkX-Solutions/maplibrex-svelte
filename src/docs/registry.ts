@@ -1185,10 +1185,16 @@ export const COMPONENTS: ComponentDoc[] = [
 				type: 'string',
 				description: 'A raster-dem source id. Defaults to the enclosing source component.'
 			},
-			{ name: 'exaggeration', type: 'number', default: '1', description: 'Vertical exaggeration.' }
+			{
+				name: 'exaggeration',
+				type: 'number',
+				default: '1',
+				description:
+					'Vertical exaggeration. A change is one setTerrain call, with the terrain kept.'
+			}
 		],
 		notes: [
-			'Unmounting restores whatever the style itself declared, so mounting this inside an {#if} is a safe on/off switch.',
+			'Unmounting restores whatever the style shown at that moment declared, also after a style swap, so mounting this inside an {#if} is a safe on/off switch.',
 			'Waits for its source: terrain is set once the raster-dem source is in the style, also when the source mounts later or is recreated.',
 			'Terrain needs pitch to be visible. A flat top-down map looks identical with it on or off.',
 			'Let the TileJSON declare the encoding when it can. Decoding terrain-rgb data as terrarium does not fail — it produces plausible-looking nonsense.',
@@ -1230,7 +1236,7 @@ export const COMPONENTS: ComponentDoc[] = [
 			}
 		],
 		notes: [
-			'Unmounting restores what the style declared.',
+			'Unmounting restores what the style shown at that moment declared, also after a style swap.',
 			'Waits for a style that can take it: mounted while a new style loads, or after one failed, it is applied once a style has loaded, and again after every style swap.',
 			'Like terrain, the sky is only visible with pitch. Straight down, there is no horizon to paint.'
 		],
@@ -1264,7 +1270,7 @@ export const COMPONENTS: ComponentDoc[] = [
 			{ name: 'intensity', type: 'number', default: '0.5', description: 'Light strength, 0 to 1.' }
 		],
 		notes: [
-			'Unmounting restores what the style declared.',
+			'Unmounting restores what the style shown at that moment declared, also after a style swap.',
 			'Waits for a style that can take it: mounted while a new style loads, or after one failed, it is applied once a style has loaded, and again after every style swap.',
 			'Only visible on layers that respond to light: fill-extrusion and hillshade. On anything else it is set and has no effect.',
 			"anchor decides what the light is fixed to. 'map' keeps it over the same ground as you rotate; 'viewport' keeps it over the same corner of the screen.",
@@ -1287,7 +1293,7 @@ export const COMPONENTS: ComponentDoc[] = [
 			}
 		],
 		notes: [
-			'Unmounting restores what the style declared. A style that declares no projection reports none, and that absence is what comes back.',
+			'Unmounting restores what the style shown at that moment declared, also after a style swap. A style that declares no projection reports none, and that absence is what comes back.',
 			'Waits for a style that can take it: mounted while a new style loads, or after one failed, it is applied once a style has loaded, and again after every style swap.',
 			'For a visitor-facing toggle, GlobeControl does the same thing as a button.'
 		],
@@ -1381,7 +1387,7 @@ export const COMPONENTS: ComponentDoc[] = [
 		],
 		notes: [
 			'Values are pushed by diff, so changing one property does not touch the others.',
-			'Unmounting puts the style’s own values back.',
+			'Unmounting, or dropping a prop, puts back the value the style shown at that moment holds, also after a style swap.',
 			'Waits for a style that can take it: mounted while a new style loads, or after one failed, it is applied once a style has loaded, and again after every style swap.',
 			'A style may declare a state block giving each name a default, so expressions resolve before any value is pushed. It is optional — the expression works without it, you just start from undefined.',
 			'This is what saves threading one value through every layer that needs it: set it once, and every expression mentioning the name sees it.'

@@ -12,21 +12,24 @@
 
 	type State = Record<string, unknown>;
 
-	// Global state belongs to the style, so unmounting puts back what the style
-	// declared rather than leaving the map with this component's values.
-	// `null` is how MapLibre resets a property to the style's declared default.
+	// Global state belongs to the style, so a property this component lets go
+	// of, by unmounting or by dropping the prop, gets back the value the style
+	// shown at that moment held. `null` is how MapLibre resets a property to
+	// the style's declared default.
 	holdStyleState<State, State>({
 		name: '<GlobalState>',
 		value: () => ({ ...values }),
-		snapshot: (map) => map.getGlobalState(),
-		write: (map, next, last) => {
+		// MapLibre hands out its live state object and updates it in place, so
+		// only a copy still holds the values from before.
+		snapshot: (map) => ({ ...map.getGlobalState() }),
+		write: (map, next, last, snapshot) => {
 			const { changed, removed } = diffRecords<unknown>(last, next);
 			for (const [name, value] of changed) map.setGlobalStateProperty(name, value);
-			for (const name of removed) map.setGlobalStateProperty(name, null);
+			for (const name of removed) map.setGlobalStateProperty(name, snapshot[name] ?? null);
 		},
-		restore: (map, previous, last) => {
-			for (const name of Object.keys(last)) {
-				map.setGlobalStateProperty(name, previous[name] ?? null);
+		restore: (map, snapshot, last) => {
+			for (const [name, value] of Object.entries(last)) {
+				if (value !== undefined) map.setGlobalStateProperty(name, snapshot[name] ?? null);
 			}
 		}
 	});
