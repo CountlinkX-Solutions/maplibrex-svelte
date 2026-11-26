@@ -21,9 +21,9 @@ export interface MapContext {
 	readonly ready: boolean;
 	/**
 	 * Increments on every completed style load, including a style swap. A swap
-	 * drops everything added to the previous style; sources and layers are put
-	 * back by the library, and anything a descendant adds by hand can track
-	 * this to add it again.
+	 * drops everything added to the previous style; sources, layers, terrain
+	 * and feature state are put back by the library, and anything a descendant
+	 * adds by hand can track this to add it again.
 	 */
 	readonly styleEpoch: number;
 }

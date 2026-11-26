@@ -11,19 +11,28 @@
 
 	/**
 	 * The tree a style swap has to bring back: a top-level layer, a GeoJSON
-	 * source with a nested layer and feature state, and optionally terrain
-	 * nested in a raster-dem source.
+	 * source with a nested layer and feature state, optionally a layer between
+	 * them, and optionally terrain nested in a raster-dem source.
 	 */
 	type Props = {
 		mapStyle: StyleSpecification | string;
 		/** Tile URLs for the raster-dem source; terrain is rendered only when given. */
 		demTiles?: string[];
+		/** Mounts a layer between the top-level layer and the source. */
+		showExtra?: boolean;
 		onmapready?: (map: MapLibreMap) => void;
 		onerror?: (event: ErrorEvent) => void;
 		onepoch?: (epoch: number) => void;
 	};
 
-	let { mapStyle, demTiles, onmapready, onerror, onepoch = () => {} }: Props = $props();
+	let {
+		mapStyle,
+		demTiles,
+		showExtra = false,
+		onmapready,
+		onerror,
+		onepoch = () => {}
+	}: Props = $props();
 
 	let map = $state<MapLibreMap | null>(null);
 	let ready = $state(false);
@@ -57,6 +66,10 @@
 	<EpochProbe {onepoch} />
 
 	<BackgroundLayer id="top-level" paint={{ 'background-opacity': 0 }} />
+
+	{#if showExtra}
+		<BackgroundLayer id="extra" paint={{ 'background-opacity': 0 }} />
+	{/if}
 
 	<GeoJSONSource id="points" data={points}>
 		<CircleLayer id="points-circle" />
