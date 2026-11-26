@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.2.0
+
+Toolchain and packaging. No component changed: everything that was in the 0.1.1 package is byte-identical in this one.
+
+### Added
+
+- `maplibrex-svelte/vite`: a Vite plugin that serves MapLibre's worker in development and emits it in the build, for every maplibre-gl 6 release. Import `workerUrl` from `virtual:maplibrex-svelte/worker` and pass it to `setWorkerUrl`; the URL is correct under any base path. Types come from `maplibrex-svelte/vite/client`. `vite` is an optional peer dependency (#4).
+
+### Changed
+
+- The `svelte` peer dependency is now `^5.16.0`. The components pass arrays to `class`, which Svelte supports from 5.16; on earlier releases the class names came out joined into one (#24).
+- The `engines` field is gone. It restricted the Node version of consuming apps, which a browser library does not depend on (#24).
+
+### Internal
+
+- Developed and tested against maplibre-gl 6.19. The suite also runs in CI on the oldest versions the peer ranges allow, Svelte 5.16.0 and maplibre-gl 6.0.0 (#24).
+- The toolchain is on SvelteKit 3 and `@sveltejs/package` 3. Consumers do not need SvelteKit 3 (#30).
+- New tests reproduce the known defects in style swapping, layer order, source handling and error reporting. They are marked as expected failures until 0.3.0 fixes them (#28).
+- The docs site deploys only after CI passes on `main`, and `RELEASING.md` documents how to publish (#27).
+
 ## 0.1.1
 
 Repairs only. No public API was added, removed or renamed.
