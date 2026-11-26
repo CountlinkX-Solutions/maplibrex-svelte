@@ -317,6 +317,56 @@ describe('what a style-level component restores on unmount (#22)', () => {
 	);
 });
 
+/**
+ * `<Light>` and `<Sky>` over a style that declares none of what they set, or
+ * only part of it. MapLibre's setters change only the keys they are given, so
+ * the keys the style does not declare are where a component's value can stay
+ * behind. `getSky()` reports only the sky the style object holds now; the sky
+ * that is drawn is MapLibre's own, read through `map.style.sky`.
+ */
+const partial = [
+	{
+		name: 'Light',
+		key: 'light',
+		props: { anchor: 'map', color: '#ff0000', intensity: 0.4 },
+		read: (map: MapLibreMap) => map.getLight(),
+		cases: [
+			{ declared: 'no light', style: styleA },
+			{ declared: 'part of it', style: styleWith('base-a', { light: { intensity: 0.1 } }) }
+		]
+	},
+	{
+		name: 'Sky',
+		key: 'sky',
+		props: { 'sky-color': '#001133', 'horizon-color': '#00ff00', 'sky-horizon-blend': 0.2 },
+		read: (map: MapLibreMap) => ({ declared: map.getSky(), drawn: map.style.sky.getSky() }),
+		cases: [
+			{ declared: 'no sky', style: styleA },
+			{ declared: 'part of it', style: styleWith('base-a', { sky: { 'sky-color': '#ff0000' } }) }
+		]
+	}
+].flatMap(({ cases, ...component }) => cases.map((entry) => ({ ...component, ...entry })));
+
+describe('what <Light> and <Sky> restore when the style declares less (#60)', () => {
+	it.each(partial)(
+		'<$name> on a style that declares $declared puts back exactly what the style gave',
+		async ({ key, props, read, style }) => {
+			const { map, rerender, errors } = await mountStack({ mapStyle: style });
+			const before = read(map);
+
+			await rerender({ [key]: props });
+			await settle();
+			expect(read(map)).not.toEqual(before);
+
+			await rerender({ [key]: undefined });
+			await settle();
+
+			expect(read(map)).toEqual(before);
+			expect(errors.messages()).toEqual([]);
+		}
+	);
+});
+
 describe('terrain exaggeration (#22)', () => {
 	it('changes the exaggeration with one setTerrain, without clearing terrain first', async () => {
 		const { map, rerender, errors } = await mountStack({

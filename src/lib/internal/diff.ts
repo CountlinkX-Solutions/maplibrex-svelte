@@ -38,3 +38,21 @@ export function diffRecords<TValue>(
 
 	return { changed, removed };
 }
+
+/**
+ * The keys of `written` that `held` does not have, each set to `undefined`.
+ *
+ * MapLibre's `setLight` and `setSky` change only the keys they are given, so
+ * writing back what the style held leaves every key a component added on top
+ * of it. Given `undefined`, MapLibre puts a key back to its default.
+ */
+export function unsetKeys<T extends object>(
+	written: T,
+	held: T | undefined
+): Partial<Record<keyof T, undefined>> {
+	return Object.fromEntries(
+		Object.keys(written)
+			.filter((key) => held === undefined || !Object.hasOwn(held, key))
+			.map((key) => [key, undefined])
+	) as Partial<Record<keyof T, undefined>>;
+}

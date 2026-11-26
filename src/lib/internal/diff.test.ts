@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { diffRecords } from './diff.js';
+import { diffRecords, unsetKeys } from './diff.js';
 
 describe('diffRecords', () => {
 	it('reports nothing when both sides are empty', () => {
@@ -47,5 +47,25 @@ describe('diffRecords', () => {
 			changed: [],
 			removed: ['fill-color']
 		});
+	});
+});
+
+describe('unsetKeys', () => {
+	// Strict equality: a key present with `undefined` is the whole point.
+	it('maps every written key to undefined when nothing was held', () => {
+		expect(unsetKeys({ anchor: 'map', intensity: 0.4 }, undefined)).toStrictEqual({
+			anchor: undefined,
+			intensity: undefined
+		});
+	});
+
+	it('leaves out the keys the held record has, whatever their value', () => {
+		expect(unsetKeys({ anchor: 'map', intensity: 0.4 }, { intensity: 0.1 })).toStrictEqual({
+			anchor: undefined
+		});
+	});
+
+	it('returns an empty record when the held record has every written key', () => {
+		expect(unsetKeys({ intensity: 0.4 }, { intensity: 0.1, color: '#fff' })).toStrictEqual({});
 	});
 });
