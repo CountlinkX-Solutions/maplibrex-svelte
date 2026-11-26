@@ -1,4 +1,8 @@
-import type { CanvasSourceSpecification, SourceSpecification } from 'maplibre-gl';
+import type {
+	CanvasSourceSpecification,
+	GeoJSONSourceSpecification,
+	SourceSpecification
+} from 'maplibre-gl';
 
 /**
  * Canvas sources sit outside the style specification union because they are
@@ -27,16 +31,33 @@ export function planSourceUpdate(
 ): SourceUpdatePlan {
 	if (previous === undefined) return { kind: 'create' };
 	if (previous.type !== next.type) return { kind: 'recreate' };
-	if (deepEqual(previous, next)) return { kind: 'noop' };
 
 	if (previous.type === 'geojson' && next.type === 'geojson') {
-		const withoutData = { ...previous, data: null };
-		const nextWithoutData = { ...next, data: null };
-
-		if (deepEqual(withoutData, nextWithoutData) && next.data !== undefined) {
-			return { kind: 'set-data', data: next.data };
-		}
+		return planGeoJSONUpdate(previous, next);
 	}
 
-	return { kind: 'recreate' };
+	return deepEqual(previous, next) ? { kind: 'noop' } : { kind: 'recreate' };
+}
+
+/**
+ * GeoJSON data is compared by reference, never walked: a collection can be
+ * large, and a deep comparison would traverse it on every prop change. A new
+ * reference means new data and costs one `setData`, even when it is equal.
+ * The other options are small, so they keep the structural comparison.
+ *
+ * The flip side is that data mutated in place keeps its reference and never
+ * reaches the map, so consumers replace it instead.
+ */
+function planGeoJSONUpdate(
+	previous: GeoJSONSourceSpecification,
+	next: GeoJSONSourceSpecification
+): SourceUpdatePlan {
+	const { data: previousData, ...previousOptions } = previous;
+	const { data: nextData, ...nextOptions } = next;
+
+	if (!deepEqual(previousOptions, nextOptions)) return { kind: 'recreate' };
+	if (previousData === nextData) return { kind: 'noop' };
+	if (nextData === undefined) return { kind: 'recreate' };
+
+	return { kind: 'set-data', data: nextData };
 }
