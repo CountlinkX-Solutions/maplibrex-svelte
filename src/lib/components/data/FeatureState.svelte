@@ -1,7 +1,5 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
-	import { getMapContext, getSourceContext } from '../../context.js';
-	import { isStyleAlive } from '../../internal/style-ops.js';
+	import { getSourceContext, getStyleRegistry } from '../../context.js';
 
 	type Props = {
 		/** Defaults to the id of the enclosing source component. */
@@ -20,24 +18,19 @@
 
 	let { source, sourceLayer, id, state }: Props = $props();
 
-	const context = getMapContext();
 	const sourceContext = getSourceContext();
+	const registry = getStyleRegistry();
 	const resolvedSource = $derived(source ?? sourceContext?.id);
 
 	// Declarative hover and selection: mount the component while a feature is
 	// active and remove it when it is not, instead of pairing every
-	// setFeatureState call with a matching removeFeatureState by hand.
+	// setFeatureState call with a matching removeFeatureState by hand. Feature
+	// state lives in the source, so the registry sets it once the source is in
+	// the style and again whenever the source is added anew.
 	$effect(() => {
-		const map = context.map;
-		const ready = context.ready;
-		void context.styleEpoch;
-		void sourceContext?.epoch;
-
 		const sourceId = resolvedSource;
 		const featureId = id;
 		const next = state;
-
-		if (!map || !ready) return;
 
 		if (!sourceId) {
 			throw new Error(
@@ -50,18 +43,22 @@
 			id: featureId,
 			...(sourceLayer ? { sourceLayer } : {})
 		};
-
-		const keys = untrack(() => {
-			map.setFeatureState(target, next);
-			return Object.keys(next);
-		});
+		let keys: string[] = [];
 
 		// Only the keys set here: other components may hold state on the same
 		// feature, such as a selection alongside a hover. A key that leaves
 		// `state` is removed by this cleanup and not set again by the next run.
-		return () => {
-			if (!isStyleAlive(map)) return;
-			for (const key of keys) map.removeFeatureState(target, key);
-		};
+		const registration = registry.addDependent({
+			source: sourceId,
+			apply: (map) => {
+				map.setFeatureState(target, next);
+				keys = Object.keys(next);
+			},
+			unapply: (map) => {
+				for (const key of keys) map.removeFeatureState(target, key);
+			}
+		});
+
+		return () => registration.unregister();
 	});
 </script>

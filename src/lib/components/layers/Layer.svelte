@@ -1,10 +1,11 @@
 <script lang="ts">
 	import type { AddLayerObject, FilterSpecification, LayerSpecification } from 'maplibre-gl';
 	import { untrack, type Snippet } from 'svelte';
-	import { getMapContext, getSourceContext } from '../../context.js';
+	import { getMapContext, getSourceContext, getStyleRegistry } from '../../context.js';
 	import { bindLayerEvents } from '../../internal/bind-events.svelte.js';
 	import { deepEqual } from '../../internal/deep-equal.js';
 	import { diffRecords } from '../../internal/diff.js';
+	import type { DependentRegistration } from '../../internal/registry.js';
 	import {
 		removeLayerIfPresent,
 		setLayoutProperty,
@@ -29,7 +30,10 @@
 		maxzoom?: number;
 		/** Sugar over `layout.visibility`. @defaultValue true */
 		visible?: boolean;
-		/** Insert before this layer id; changing it moves the layer. */
+		/**
+		 * Insert before this layer id; changing it moves the layer. Without it,
+		 * the layer's place in the markup decides its place in the style.
+		 */
 		beforeId?: string;
 		metadata?: unknown;
 		children?: Snippet<[{ id: string }]>;
@@ -54,6 +58,7 @@
 
 	const context = getMapContext();
 	const sourceContext = getSourceContext();
+	const registry = getStyleRegistry();
 
 	const resolvedSource = $derived(source ?? sourceContext?.id);
 	const resolvedLayout = $derived({
@@ -61,25 +66,37 @@
 		...(visible ? {} : { visibility: 'none' })
 	} satisfies StyleRecord);
 
-	let mounted = $state(false);
+	let anchor = $state<HTMLElement>();
+	/** In the style now. */
+	let inStyle = $state(false);
+	/**
+	 * Added at least once. Children render from then on and stay through style
+	 * swaps and source recreates, which take the layer out for a moment.
+	 */
+	let added = $state(false);
 	let appliedPaint = $state<StyleRecord | undefined>();
 	let appliedLayout = $state<StyleRecord | undefined>();
 	let appliedFilter = $state<FilterSpecification | undefined>();
+	let registration: DependentRegistration | undefined;
 
-	// Add and remove. Re-runs when the map appears, when the style is replaced,
-	// when the enclosing source is recreated, and on identity changes that
-	// MapLibre offers no setter for.
+	function forget() {
+		inStyle = false;
+		appliedPaint = undefined;
+		appliedLayout = undefined;
+		appliedFilter = undefined;
+	}
+
+	// The registry adds the layer once its source is in the style, puts it back
+	// after a style swap or a source recreate, and places it by the anchor below,
+	// so the draw order follows the markup whenever the layer mounts. Identity
+	// changes that MapLibre offers no setter for register the layer anew.
 	$effect(() => {
-		const map = context.map;
-		const ready = context.ready;
-		void context.styleEpoch;
-		void sourceContext?.epoch;
-
+		const element = anchor;
 		const layerId = id;
 		const layerType = type;
 		const sourceId = resolvedSource;
 
-		if (!map || !ready) return;
+		if (!element) return;
 
 		if (layerType !== 'background' && !sourceId) {
 			throw new Error(
@@ -87,36 +104,52 @@
 			);
 		}
 
-		untrack(() => {
-			map.addLayer(
-				{
-					id: layerId,
-					type: layerType,
-					...(sourceId ? { source: sourceId } : {}),
-					...(sourceLayer ? { 'source-layer': sourceLayer } : {}),
-					...(filter ? { filter } : {}),
-					...(minzoom !== undefined ? { minzoom } : {}),
-					...(maxzoom !== undefined ? { maxzoom } : {}),
-					...(metadata !== undefined ? { metadata } : {}),
-					layout: resolvedLayout,
-					paint: paint ?? {}
-				} as AddLayerObject,
-				beforeId
-			);
+		const current = registry.addDependent({
+			source: sourceId,
+			layer: { id: layerId, anchor: element, beforeId: untrack(() => beforeId) },
+			apply: (map, before) => {
+				map.addLayer(
+					{
+						id: layerId,
+						type: layerType,
+						...(sourceId ? { source: sourceId } : {}),
+						...(sourceLayer ? { 'source-layer': sourceLayer } : {}),
+						...(filter ? { filter } : {}),
+						...(minzoom !== undefined ? { minzoom } : {}),
+						...(maxzoom !== undefined ? { maxzoom } : {}),
+						...(metadata !== undefined ? { metadata } : {}),
+						layout: resolvedLayout,
+						paint: paint ?? {}
+					} as AddLayerObject,
+					before
+				);
+				// MapLibre reports an invalid layer through `onerror` and leaves it out.
+				if (!map.getLayer(layerId)) return false;
 
-			appliedPaint = paint;
-			appliedLayout = resolvedLayout;
-			appliedFilter = filter;
-			mounted = true;
+				appliedPaint = paint;
+				appliedLayout = resolvedLayout;
+				appliedFilter = filter;
+				inStyle = true;
+				added = true;
+			},
+			unapply: (map) => {
+				forget();
+				removeLayerIfPresent(map, layerId);
+			},
+			reset: forget
 		});
+		registration = current;
 
 		return () => {
-			mounted = false;
-			appliedPaint = undefined;
-			appliedLayout = undefined;
-			appliedFilter = undefined;
-			removeLayerIfPresent(map, layerId);
+			current.unregister();
+			if (registration === current) registration = undefined;
 		};
+	});
+
+	// Only an explicit change moves the layer: mounting never does.
+	$effect(() => {
+		const target = beforeId;
+		untrack(() => registration?.setBeforeId(target));
 	});
 
 	// Paint and layout are pushed property by property. Recreating the layer to
@@ -124,7 +157,7 @@
 	$effect(() => {
 		const map = context.map;
 		const next = paint;
-		if (!map || !mounted) return;
+		if (!map || !inStyle) return;
 
 		const { changed, removed } = diffRecords<unknown>(
 			untrack(() => appliedPaint),
@@ -142,7 +175,7 @@
 	$effect(() => {
 		const map = context.map;
 		const next = resolvedLayout;
-		if (!map || !mounted) return;
+		if (!map || !inStyle) return;
 
 		const { changed, removed } = diffRecords<unknown>(
 			untrack(() => appliedLayout),
@@ -160,7 +193,7 @@
 	$effect(() => {
 		const map = context.map;
 		const next = filter;
-		if (!map || !mounted) return;
+		if (!map || !inStyle) return;
 		if (
 			deepEqual(
 				untrack(() => appliedFilter),
@@ -178,27 +211,24 @@
 	$effect(() => {
 		const map = context.map;
 		const range = { minzoom, maxzoom };
-		if (!map || !mounted) return;
+		if (!map || !inStyle) return;
 		if (range.minzoom === undefined && range.maxzoom === undefined) return;
 
 		untrack(() => map.setLayerZoomRange(id, range.minzoom ?? 0, range.maxzoom ?? 24));
 	});
 
-	$effect(() => {
-		const map = context.map;
-		const target = beforeId;
-		if (!map || !mounted) return;
-
-		untrack(() => map.moveLayer(id, target));
-	});
-
 	bindLayerEvents(
-		() => (mounted ? context.map : null),
+		() => (inStyle ? context.map : null),
 		() => id,
 		() => events
 	);
 </script>
 
-{#if mounted}
+<!-- Marks the layer's place in the markup, which is its place in the draw
+     order. Empty and `hidden`, not styled inline: a strict CSP blocks style
+     attributes. -->
+<div bind:this={anchor} hidden aria-hidden="true" data-maplibrex="layer"></div>
+
+{#if added}
 	{@render children?.({ id })}
 {/if}

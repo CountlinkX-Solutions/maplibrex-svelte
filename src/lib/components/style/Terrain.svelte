@@ -1,8 +1,6 @@
 <script lang="ts">
 	import type { TerrainSpecification } from 'maplibre-gl';
-	import { untrack } from 'svelte';
-	import { getMapContext, getSourceContext } from '../../context.js';
-	import { isStyleAlive } from '../../internal/style-ops.js';
+	import { getSourceContext, getStyleRegistry } from '../../context.js';
 
 	type Props = {
 		/** A raster-dem source id. Defaults to the enclosing source component. */
@@ -13,22 +11,18 @@
 
 	let { source, exaggeration }: Props = $props();
 
-	const context = getMapContext();
 	const sourceContext = getSourceContext();
+	const registry = getStyleRegistry();
 	const resolvedSource = $derived(source ?? sourceContext?.id);
 
-	// Terrain is style-level state rather than a layer, so unmounting restores
-	// whatever the style itself declared instead of blindly disabling it.
+	// Terrain needs its source in the style, so the registry sets it once the
+	// source is there, clears it before the source goes, and sets it again
+	// after a style swap or a recreate. It is style-level state rather than a
+	// layer, so clearing restores whatever the style declared when it was set,
+	// read afresh each time instead of blindly disabling terrain.
 	$effect(() => {
-		const map = context.map;
-		const ready = context.ready;
-		void context.styleEpoch;
-		void sourceContext?.epoch;
-
 		const sourceId = resolvedSource;
 		const next = exaggeration;
-
-		if (!map || !ready) return;
 
 		if (!sourceId) {
 			throw new Error(
@@ -36,15 +30,23 @@
 			);
 		}
 
-		const previous = untrack(() => map.getTerrain());
+		let previous: TerrainSpecification | null = null;
 
-		map.setTerrain({
+		const registration = registry.addDependent({
 			source: sourceId,
-			...(next !== undefined ? { exaggeration: next } : {})
-		} satisfies TerrainSpecification);
+			apply: (map) => {
+				previous = map.getTerrain();
+				map.setTerrain({
+					source: sourceId,
+					...(next !== undefined ? { exaggeration: next } : {})
+				} satisfies TerrainSpecification);
+				return map.getTerrain()?.source === sourceId;
+			},
+			unapply: (map) => {
+				map.setTerrain(previous);
+			}
+		});
 
-		return () => {
-			if (isStyleAlive(map)) map.setTerrain(previous);
-		};
+		return () => registration.unregister();
 	});
 </script>

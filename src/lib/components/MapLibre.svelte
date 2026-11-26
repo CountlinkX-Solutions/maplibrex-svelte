@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Map as MapLibreMap } from 'maplibre-gl';
+	import { ErrorEvent, Map as MapLibreMap } from 'maplibre-gl';
 	import type {
 		LngLatBoundsLike,
 		LngLatLike,
@@ -8,9 +8,10 @@
 		StyleSpecification
 	} from 'maplibre-gl';
 	import { untrack, type Snippet } from 'svelte';
-	import { setMapContext } from '../context.js';
+	import { setMapContext, setStyleRegistry } from '../context.js';
 	import { sameLngLat, sameNumber } from '../internal/camera.js';
 	import { bindEvents } from '../internal/bind-events.svelte.js';
+	import { createStyleRegistry } from '../internal/registry.js';
 	import {
 		planInteractionChanges,
 		readInteractionState,
@@ -88,6 +89,13 @@
 		}
 	});
 
+	// Errors the library finds go where MapLibre's own go: to `onerror`, or to
+	// the console when nobody listens.
+	const registry = createStyleRegistry({
+		report: (error) => untrack(() => map)?.fire(new ErrorEvent(error))
+	});
+	setStyleRegistry(registry);
+
 	// Creation depends on the container element alone. Every other prop is read
 	// untracked so that a zoom change never tears the WebGL context down.
 	$effect(() => {
@@ -108,13 +116,43 @@
 
 			map = instance;
 
-			const loaded = instance.on('load', () => {
-				ready = true;
-				styleEpoch += 1;
+			const subscriptions = [
+				instance.on('load', () => {
+					registry.start(instance);
+					ready = true;
+					styleEpoch += 1;
+				}),
+				// Fired only when a style is replaced wholesale, as opposed to diffed:
+				// the previous style and everything added to it are already gone.
+				instance.on('styledataloading', () => registry.styleLoading()),
+				// Fired once a replacement style is usable, whether MapLibre rebuilt it
+				// or diffed the old one into it, on every release from 6.0. MapLibre
+				// documents it as the moment to add sources and layers again.
+				instance.on('style.load', () => {
+					if (!registry.started) return;
+					registry.styleLoaded();
+					styleEpoch += 1;
+				}),
+				instance.on('sourcedata', () => registry.sourcesChanged())
+			];
+
+			// A keyed `{#each}` moves layer anchors without running any effect, so
+			// the document around the map is watched for moves. Changes inside
+			// MapLibre's own container (markers, popups, controls) hold no anchor.
+			const observer = new MutationObserver((records) => {
+				const moved = records.some(
+					(record) => record.addedNodes.length > 0 && !element.contains(record.target)
+				);
+				if (moved) registry.reorder();
 			});
+			if (element.parentNode) {
+				observer.observe(element.parentNode, { childList: true, subtree: true });
+			}
 
 			return () => {
-				loaded.unsubscribe();
+				observer.disconnect();
+				for (const subscription of subscriptions) subscription.unsubscribe();
+				registry.stop();
 				ready = false;
 				map = null;
 				instance.remove();
@@ -122,8 +160,7 @@
 		});
 	});
 
-	// Style swaps wipe user-added sources and layers, so descendants are told to
-	// re-add themselves only once the replacement style has finished loading.
+	// The registry puts back what a swap drops, on the `style.load` that follows.
 	let appliedStyle = $state<StyleSpecification | string | undefined>();
 
 	$effect(() => {
@@ -138,16 +175,9 @@
 		if (untrack(() => appliedStyle) === nextStyle) return;
 
 		appliedStyle = nextStyle;
-		instance.setStyle(nextStyle);
-
-		let cancelled = false;
-		void instance.once('styledata').then(() => {
-			if (!cancelled) styleEpoch += 1;
-		});
-
-		return () => {
-			cancelled = true;
-		};
+		// A diffed style fires `style.load` inside this call, and what reacts to
+		// it must not subscribe this effect to anything.
+		untrack(() => instance.setStyle(nextStyle));
 	});
 
 	// Map -> props. Guarded by value comparison rather than a mutex flag, which
