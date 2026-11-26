@@ -24,28 +24,28 @@ Each release is a GitHub milestone with the same name. Fixes that change no publ
 
 Small, independent fixes that can ship within days.
 
-| Issue | Work |
-| --- | --- |
-| #25 | Docs sidebar under the Pages base path; trailing-slash 404 |
-| #11 | Replace inline `style="display: none"` in `Marker`, `Popup` and `CustomControl` so a strict CSP works |
-| #16 | `FeatureState` removes only its own keys on unmount |
-| #17 | `Popup` stays open when a constructor-only prop changes |
-| #9, #19 | Compare GeoJSON `data` by reference only, and document that it must be replaced, not mutated |
-| #6, #7 | Document `moveend` during setup, and attribution being written as HTML (including the default control) |
-| #26 (part) | README corrections; document `onerror`; add the worker step to the site |
-| #10 | Ask the reporter for a minimal reproduction; the library's types accept numeric ids |
+| Issue      | Work                                                                                                   |
+| ---------- | ------------------------------------------------------------------------------------------------------ |
+| #25        | Docs sidebar under the Pages base path; trailing-slash 404                                             |
+| #11        | Replace inline `style="display: none"` in `Marker`, `Popup` and `CustomControl` so a strict CSP works  |
+| #16        | `FeatureState` removes only its own keys on unmount                                                    |
+| #17        | `Popup` stays open when a constructor-only prop changes                                                |
+| #9, #19    | Compare GeoJSON `data` by reference only, and document that it must be replaced, not mutated           |
+| #6, #7     | Document `moveend` during setup, and attribution being written as HTML (including the default control) |
+| #26 (part) | README corrections; document `onerror`; add the worker step to the site                                |
+| #10        | Ask the reporter for a minimal reproduction; the library's types accept numeric ids                    |
 
 ### 0.2.0 — Toolchain and release foundations
 
 Nothing user-visible should change except the supported version ranges. Doing this before the core rework means that work is written and tested once, against current versions.
 
-| Issue | Work |
-| --- | --- |
-| #30 | Migrate to SvelteKit 3, `adapter-static` 4, `@sveltejs/package` 3; diff the published tarball against 0.1.0 |
-| #24 | Dev dependency to `maplibre-gl ^6.19.0`; set real peer floors for `svelte` and `maplibre-gl`; CI on the floor and on latest |
-| #4 | Publish the worker plugin as `maplibrex-svelte/vite`, correct for the self-contained worker of 6.13+ and for apps with a base path |
-| #27 | Changesets, publish from CI with provenance, docs deploy gated on CI, dependency updates, labels and milestones |
-| #28 (part) | Test helpers for style swap, layer order and error paths, used by every fix in 0.3.0 |
+| Issue      | Work                                                                                                                               |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| #30        | Migrate to SvelteKit 3, `adapter-static` 4, `@sveltejs/package` 3; diff the published tarball against 0.1.0                        |
+| #24        | Dev dependency to `maplibre-gl ^6.19.0`; set real peer floors for `svelte` and `maplibre-gl`; CI on the floor and on latest        |
+| #4         | Publish the worker plugin as `maplibrex-svelte/vite`, correct for the self-contained worker of 6.13+ and for apps with a base path |
+| #27        | Changesets, publish from CI with provenance, docs deploy gated on CI, dependency updates, labels and milestones                    |
+| #28 (part) | Test helpers for style swap, layer order and error paths, used by every fix in 0.3.0                                               |
 
 Raising the `maplibre-gl` peer floor to 6.7 or later settles half of #2: from that version a WebGL failure is always a thrown `GPUInitializationError`, never a half-built map.
 
@@ -53,17 +53,17 @@ Raising the `maplibre-gl` peer floor to 6.7 or later settles half of #2: from th
 
 The central piece is one registry in the map context that knows every declared source and layer in tree order. It adds sources before layers, re-applies everything after a style swap, and places each layer relative to its declared neighbours. Most of the serious defects are the same missing piece seen from different sides, so they should be designed together and landed as a short series of PRs.
 
-| Issue | Work |
-| --- | --- |
-| #1, #8 | Layer order follows the component tree, including layers that mount late; no unconditional `moveLayer`; a missing `beforeId` is reported, not silent |
-| #13 | Nested layers, terrain and feature state come back after a style swap |
-| #14 | Layers attached with `source="..."` behave like nested ones |
-| #15 | The style shown always converges on the current `mapStyle` |
-| #22 | Style-level components re-read what to restore after each swap; terrain updates in place |
-| #21 | Use MapLibre's setters for tile, image and video sources; recreate only when there is no setter |
+| Issue  | Work                                                                                                                                                     |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| #1, #8 | Layer order follows the component tree, including layers that mount late; no unconditional `moveLayer`; a missing `beforeId` is reported, not silent     |
+| #13    | Nested layers, terrain and feature state come back after a style swap                                                                                    |
+| #14    | Layers attached with `source="..."` behave like nested ones                                                                                              |
+| #15    | The style shown always converges on the current `mapStyle`                                                                                               |
+| #22    | Style-level components re-read what to restore after each swap; terrain updates in place                                                                 |
+| #21    | Use MapLibre's setters for tile, image and video sources; recreate only when there is no setter                                                          |
 | #2, #3 | A map status (`loading`, `ready`, `failed`) and one documented error surface; fallback content when WebGL is unavailable; a failed style can be replaced |
-| #18 | Two-way camera keeps each prop's latest target; re-tested against the 6.17 and 6.18 camera changes |
-| #20 | Every prop is either reactive, including being unset, or documented as creation-only |
+| #18    | Two-way camera keeps each prop's latest target; re-tested against the 6.17 and 6.18 camera changes                                                       |
+| #20    | Every prop is either reactive, including being unset, or documented as creation-only                                                                     |
 
 Open design question for this release: MapLibre 6.16 added `transformStyle`, its own way to carry layers across a style change (#32). The registry should either build on it or state why it does not.
 
@@ -71,15 +71,15 @@ Open design question for this release: MapLibre 6.16 added `transformStyle`, its
 
 What the first consumer had to reach for the raw map to do.
 
-| Issue | Work |
-| --- | --- |
-| #5 | Reactive fit to bounds (a `<FitBounds>` component), with `absolutePadding`; `bounds` no longer undone by `center`/`zoom` |
-| #12 | Tracking issue, split into: click with the features under the point (#33), cluster expansion (#34), readable bounds and resize (#35), box select (#36) |
-| #19 | Incremental GeoJSON updates through `updateData` |
-| #32 | `transformStyle`, `globalState` option, `minZoom`/`maxZoom`/`maxBounds` as props, `dragRotate.around`, `zoomToUserAccuracy`, new style properties |
-| #23 | Controls keep MapLibre's default positions |
-| #29 | Accessible name for the map; keyboard-reachable custom markers |
-| #7 | Optional escaped-text mode for attribution |
+| Issue | Work                                                                                                                                                   |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| #5    | Reactive fit to bounds (a `<FitBounds>` component), with `absolutePadding`; `bounds` no longer undone by `center`/`zoom`                               |
+| #12   | Tracking issue, split into: click with the features under the point (#33), cluster expansion (#34), readable bounds and resize (#35), box select (#36) |
+| #19   | Incremental GeoJSON updates through `updateData`                                                                                                       |
+| #32   | `transformStyle`, `globalState` option, `minZoom`/`maxZoom`/`maxBounds` as props, `dragRotate.around`, `zoomToUserAccuracy`, new style properties      |
+| #23   | Controls keep MapLibre's default positions                                                                                                             |
+| #29   | Accessible name for the map; keyboard-reachable custom markers                                                                                         |
+| #7    | Optional escaped-text mode for attribution                                                                                                             |
 
 Layer interaction helpers belong here too (#37): hover cursor, managed hover state, and typed click and hover events that carry the features. They are the most common request in the neighbouring Svelte libraries.
 
@@ -87,13 +87,13 @@ Layer interaction helpers belong here too (#37): hover cursor, managed hover sta
 
 Each ships as an optional entry or package with optional peers, so the main entry stays free of them.
 
-| Issue | Work |
-| --- | --- |
-| #31 | `<DeckOverlay>` on `@deck.gl/maplibre`, overlaid and interleaved |
-| #38 | PMTiles helper on top of `<Protocol>` (pmtiles 4.5) |
-| #39 | terra-draw component that keeps drawings across a style swap |
-| #40 | maplibre-contour helper (0.1.1 or later) |
-| #41 | Markers generated from GeoJSON, for many-marker cases |
+| Issue | Work                                                             |
+| ----- | ---------------------------------------------------------------- |
+| #31   | `<DeckOverlay>` on `@deck.gl/maplibre`, overlaid and interleaved |
+| #38   | PMTiles helper on top of `<Protocol>` (pmtiles 4.5)              |
+| #39   | terra-draw component that keeps drawings across a style swap     |
+| #40   | maplibre-contour helper (0.1.1 or later)                         |
+| #41   | Markers generated from GeoJSON, for many-marker cases            |
 
 Watch, do not build yet: custom projections, `sparse` vector sources and custom-layer terrain draping, all still experimental upstream.
 
