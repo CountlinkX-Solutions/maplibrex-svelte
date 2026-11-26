@@ -166,7 +166,7 @@ Four decisions shape the whole API.
 
 **The component tree is the style tree.** A `<Layer>` nested inside a source component inherits its source id; one elsewhere names it with `source`, and both behave the same. The library adds a layer once its source is in the style, whenever either mounts, and takes it out before its source goes. Layers are drawn in the order they appear in the markup, including layers that mount later inside `{#if}` or `{#each}`, whatever order Svelte mounts them in. `beforeId` overrides the markup for one layer: it goes below the layer it names. If that layer is not in the style, the mistake is reported through `onerror` once and the layer is added on top, then moved below its target if a layer component adds it later. Likewise, a layer, terrain or feature state still waiting, once the style has loaded, for a source that no component provides and the style does not have is reported once, and is added if that source appears later.
 
-**Updates are surgical, never destructive.** Changing one paint property calls `setPaintProperty` for that key alone; recreating the layer would drop its tiles and restart every transition. Changing GeoJSON data calls `setData`; recreating the source would take every dependent layer down with it. Recreation happens only where MapLibre exposes no setter — and where that is the case, it is documented on the prop.
+**Updates are surgical, never destructive.** Changing one paint property calls `setPaintProperty` for that key alone; recreating the layer would drop its tiles and restart every transition. Changing GeoJSON data calls `setData`, cluster options `setClusterOptions`, the `tiles` or `url` of a tile source `setTiles` or `setUrl`, and the corners of an image, video or canvas source `setCoordinates`; recreating the source would take every dependent layer out of the style and back in. Recreation happens only where MapLibre exposes no setter — and where that is the case, it is documented on the component.
 
 **Every MapLibre event is a typed callback prop.** The props are derived from MapLibre's own event maps, so `onmoveend` gets a `MapLibreEvent`, `onclick` on a layer gets a `MapLayerMouseEvent`, and a new upstream event is available without a release here.
 
@@ -338,7 +338,7 @@ Layer-scoped events are typed:
 
 ### Style state
 
-Terrain, sky, light and projection are properties of the style rather than entries in it. These components apply them on mount and **put back what the style declared** on unmount, so mounting one inside an `{#if}` is a safe way to turn an effect on and off.
+Terrain, sky, light and projection are properties of the style rather than entries in it. These components apply them on mount and **put back what the style declared** on unmount, read from the style shown at that moment, also after a style swap, so mounting one inside an `{#if}` is a safe way to turn an effect on and off. Like layers, they wait for a style that can take them: one mounted while a new `mapStyle` loads, or after one failed, is applied once a style has loaded, and every one is applied again after a style swap.
 
 ```svelte
 <RasterDEMSource id="dem" tiles={[demUrl]} encoding="terrarium">
@@ -350,7 +350,7 @@ Terrain, sky, light and projection are properties of the style rather than entri
 <Projection type="globe" />
 ```
 
-`<Terrain>` inherits its source id from an enclosing `<RasterDEMSource>`, the same way layers do.
+`<Terrain>` inherits its source id from an enclosing `<RasterDEMSource>`, the same way layers do. Changing `exaggeration` updates the terrain in place.
 
 `<Image>` registers an icon for `icon-image` to reference, from a URL or from pixels you already have, and re-registers it after a style swap:
 

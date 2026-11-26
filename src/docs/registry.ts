@@ -563,7 +563,7 @@ export const COMPONENTS: ComponentDoc[] = [
 			SOURCE_CHILDREN_PROP
 		],
 		notes: [
-			'A data change calls setData and keeps the source alive. Any other change has no setter upstream and recreates the source, which takes its layers down and puts them back.',
+			'A data change calls setData, and a change to cluster, clusterRadius or clusterMaxZoom calls setClusterOptions; both keep the source and its layers. Unsetting clusterRadius or clusterMaxZoom, changing data and cluster options at once, or changing any other option recreates the source, which takes its layers out and puts them back where they were.',
 			'data is compared by reference and never walked, so replace it rather than mutate it. A new object calls setData even when it is equal to the old one. A mutation in place, such as features.push on a $state object, keeps the reference and never reaches the map; $state.raw suits data you replace.',
 			'Feature state needs feature ids. Set them on the features, or map a property with promoteId.'
 		],
@@ -597,7 +597,10 @@ export const COMPONENTS: ComponentDoc[] = [
 			{ name: 'promoteId', type: 'string', description: 'Uses a property as the feature id.' },
 			SOURCE_CHILDREN_PROP
 		],
-		notes: ['Layers on a vector source almost always need sourceLayer.'],
+		notes: [
+			'Layers on a vector source almost always need sourceLayer.',
+			'Changing tiles calls setTiles and changing url calls setUrl, which keep the source and its layers. Changing both at once, removing one, or changing any other option recreates the source, which takes its layers out and puts them back where they were.'
+		],
 		examples: ['Add a vector tile source', 'PMTiles source and protocol'],
 		demo: 'source-vector'
 	},
@@ -636,6 +639,9 @@ export const COMPONENTS: ComponentDoc[] = [
 			{ name: 'attribution', type: 'string', description: 'Shown by the attribution control.' },
 			SOURCE_CHILDREN_PROP
 		],
+		notes: [
+			'Changing tiles calls setTiles and changing url calls setUrl, which keep the source and its layers. Changing both at once, removing one, or changing any other option recreates the source, which takes its layers out and puts them back where they were.'
+		],
 		examples: ['Add a raster tile source', 'Add a WMS source', 'Add a COG raster source'],
 		demo: 'source-raster'
 	},
@@ -670,7 +676,8 @@ export const COMPONENTS: ComponentDoc[] = [
 		notes: [
 			'Terrain and Hillshade nested here inherit this source id, and both can read the same source at once.',
 			'Only Terrain changes the height of the ground. HillshadeLayer has a paint property called hillshade-exaggeration, but it deepens the shading and moves nothing — the name misleads almost everyone the first time.',
-			'Getting encoding wrong does not fail. Let the TileJSON declare it when it can.'
+			'Getting encoding wrong does not fail. Let the TileJSON declare it when it can.',
+			'Changing tiles calls setTiles and changing url calls setUrl, which keep the source and its layers. Changing both at once, removing one, or changing any other option recreates the source, which takes its layers out and puts them back where they were.'
 		],
 		examples: ['3D Terrain', 'Add a hillshade layer', 'Add a color relief layer'],
 		demo: 'source-raster-dem'
@@ -697,6 +704,9 @@ export const COMPONENTS: ComponentDoc[] = [
 				description: 'Corners in clockwise order, starting top-left.'
 			},
 			SOURCE_CHILDREN_PROP
+		],
+		notes: [
+			'Changing coordinates calls setCoordinates, and changing url calls updateImage, with the new coordinates if they changed too; both keep the source and its layers. Removing url recreates the source.'
 		],
 		examples: ['Animate a series of images'],
 		demo: 'source-image'
@@ -728,6 +738,9 @@ export const COMPONENTS: ComponentDoc[] = [
 				description: 'Corners in clockwise order, starting top-left.'
 			},
 			SOURCE_CHILDREN_PROP
+		],
+		notes: [
+			'Changing coordinates calls setCoordinates, which keeps the source and its layers. Changing urls recreates the source.'
 		],
 		examples: ['Add a video'],
 		demo: 'source-video'
@@ -761,6 +774,9 @@ export const COMPONENTS: ComponentDoc[] = [
 				description: 'Re-reads the canvas every frame. Turn it off for a static drawing.'
 			},
 			SOURCE_CHILDREN_PROP
+		],
+		notes: [
+			'Changing coordinates calls setCoordinates, which keeps the source and its layers. Changing canvas or animate recreates the source.'
 		],
 		examples: ['Add a canvas source'],
 		demo: 'source-canvas'
@@ -1185,10 +1201,16 @@ export const COMPONENTS: ComponentDoc[] = [
 				type: 'string',
 				description: 'A raster-dem source id. Defaults to the enclosing source component.'
 			},
-			{ name: 'exaggeration', type: 'number', default: '1', description: 'Vertical exaggeration.' }
+			{
+				name: 'exaggeration',
+				type: 'number',
+				default: '1',
+				description:
+					'Vertical exaggeration. A change is one setTerrain call, with the terrain kept.'
+			}
 		],
 		notes: [
-			'Unmounting restores whatever the style itself declared, so mounting this inside an {#if} is a safe on/off switch.',
+			'Unmounting restores whatever the style shown at that moment declared, also after a style swap, so mounting this inside an {#if} is a safe on/off switch.',
 			'Waits for its source: terrain is set once the raster-dem source is in the style, also when the source mounts later or is recreated.',
 			'Terrain needs pitch to be visible. A flat top-down map looks identical with it on or off.',
 			'Let the TileJSON declare the encoding when it can. Decoding terrain-rgb data as terrarium does not fail — it produces plausible-looking nonsense.',
@@ -1230,7 +1252,8 @@ export const COMPONENTS: ComponentDoc[] = [
 			}
 		],
 		notes: [
-			'Unmounting restores what the style declared.',
+			'Unmounting restores what the style shown at that moment declared, also after a style swap.',
+			'Waits for a style that can take it: mounted while a new style loads, or after one failed, it is applied once a style has loaded, and again after every style swap.',
 			'Like terrain, the sky is only visible with pitch. Straight down, there is no horizon to paint.'
 		],
 		examples: ['Sky, Fog, Terrain', 'Display a globe with an atmosphere'],
@@ -1263,7 +1286,8 @@ export const COMPONENTS: ComponentDoc[] = [
 			{ name: 'intensity', type: 'number', default: '0.5', description: 'Light strength, 0 to 1.' }
 		],
 		notes: [
-			'Unmounting restores what the style declared.',
+			'Unmounting restores what the style shown at that moment declared, also after a style swap.',
+			'Waits for a style that can take it: mounted while a new style loads, or after one failed, it is applied once a style has loaded, and again after every style swap.',
 			'Only visible on layers that respond to light: fill-extrusion and hillshade. On anything else it is set and has no effect.',
 			"anchor decides what the light is fixed to. 'map' keeps it over the same ground as you rotate; 'viewport' keeps it over the same corner of the screen.",
 			'position is [radial, azimuthal, polar]: distance, the angle around, and the angle down from straight overhead.'
@@ -1285,7 +1309,8 @@ export const COMPONENTS: ComponentDoc[] = [
 			}
 		],
 		notes: [
-			'Unmounting restores what the style declared. A style that declares no projection reports none, and that absence is what comes back.',
+			'Unmounting restores what the style shown at that moment declared, also after a style swap. A style that declares no projection reports none, and that absence is what comes back.',
+			'Waits for a style that can take it: mounted while a new style loads, or after one failed, it is applied once a style has loaded, and again after every style swap.',
 			'For a visitor-facing toggle, GlobeControl does the same thing as a button.'
 		],
 		examples: ['Display a globe with a vector map', 'Zoom and planet size relation on globe'],
@@ -1378,7 +1403,8 @@ export const COMPONENTS: ComponentDoc[] = [
 		],
 		notes: [
 			'Values are pushed by diff, so changing one property does not touch the others.',
-			'Unmounting puts the style’s own values back.',
+			'Unmounting, or dropping a prop, puts back the value the style shown at that moment holds, also after a style swap.',
+			'Waits for a style that can take it: mounted while a new style loads, or after one failed, it is applied once a style has loaded, and again after every style swap.',
 			'A style may declare a state block giving each name a default, so expressions resolve before any value is pushed. It is optional — the expression works without it, you just start from undefined.',
 			'This is what saves threading one value through every layer that needs it: set it once, and every expression mentioning the name sees it.'
 		],
