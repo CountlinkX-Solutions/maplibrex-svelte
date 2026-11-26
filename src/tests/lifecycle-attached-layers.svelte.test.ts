@@ -16,7 +16,14 @@ import {
  */
 
 type Scenario =
-	'after' | 'before' | 'together' | 'together-nested' | 'split' | 'split-before' | 'rename';
+	| 'after'
+	| 'before'
+	| 'together'
+	| 'together-nested'
+	| 'split'
+	| 'split-before'
+	| 'rename'
+	| 'manual';
 
 type Toggles = {
 	tolerance?: number;
