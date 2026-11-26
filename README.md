@@ -164,7 +164,7 @@ Three things to check in your own app:
 
 Four decisions shape the whole API.
 
-**The component tree is the style tree.** A `<Layer>` nested inside a source component inherits its source id. Nesting is not decoration — it is what wires the two together, and it is what makes teardown order correct: Svelte destroys children before parents, which is exactly the order MapLibre requires when removing a layer that references a source.
+**The component tree is the style tree.** A `<Layer>` nested inside a source component inherits its source id; one elsewhere names it with `source`, and both behave the same. The library adds a layer once its source is in the style, whenever either mounts, and takes it out before its source goes. Layers are drawn in the order they appear in the markup, including layers that mount later inside `{#if}` or `{#each}`, whatever order Svelte mounts them in. `beforeId` overrides the markup for one layer: it goes below the layer it names. If that layer is not in the style, the mistake is reported through `onerror` once and the layer is added on top, then moved below its target if a layer component adds it later.
 
 **Updates are surgical, never destructive.** Changing one paint property calls `setPaintProperty` for that key alone; recreating the layer would drop its tiles and restart every transition. Changing GeoJSON data calls `setData`; recreating the source would take every dependent layer down with it. Recreation happens only where MapLibre exposes no setter — and where that is the case, it is documented on the prop.
 
@@ -180,7 +180,7 @@ Four decisions shape the whole API.
 | ------------ | ------------------------------------------------------------------------------------------------------------------------- |
 | `<MapLibre>` | Creates the map and provides context. `bind:map`, `bind:ready`, `bind:center`, `bind:zoom`, `bind:bearing`, `bind:pitch`. |
 
-Changing `mapStyle` swaps the style in place rather than recreating the map; descendants re-add themselves once the new style has loaded.
+Changing `mapStyle` swaps the style in place rather than recreating the map. A swap drops everything added to the previous style, so once the new style is usable the library puts back every source, layer, terrain and feature state in the tree, the layers in markup order above the new style's own, and the other style components apply themselves again.
 
 `padding` insets the viewport, which moves the vanishing point off centre. `interactions` enables and disables gesture handlers at runtime; an omitted key is left alone, so you toggle only what you name:
 
@@ -268,6 +268,8 @@ MapLibre also adds an attribution control of its own to every map, whether or no
 `<CustomLayer>` mounts your own WebGL layer — three.js, babylon.js, or raw GL — through MapLibre's `CustomLayerInterface`.
 
 Common props: `id`, `source` (defaults to the enclosing source), `sourceLayer`, `paint`, `layout`, `filter`, `minzoom`, `maxzoom`, `beforeId`, and `visible` as sugar over `layout.visibility`.
+
+A layer goes where it sits in the markup: below the next layer component after it, or on top of the style when there is none. `beforeId` puts it below the layer it names instead, such as a label layer of the basemap, and changing `beforeId` moves it. To read its position, each layer component renders an empty `hidden` element where it sits, next to the map container rather than inside it.
 
 Layer-scoped events are typed:
 

@@ -68,7 +68,8 @@ const LAYER_PROPS: PropDoc[] = [
 	{
 		name: 'source',
 		type: 'string',
-		description: 'Defaults to the id of the enclosing source component.'
+		description:
+			'Defaults to the id of the enclosing source component. The layer waits until that source is in the style.'
 	},
 	{
 		name: 'sourceLayer',
@@ -93,7 +94,8 @@ const LAYER_PROPS: PropDoc[] = [
 	{
 		name: 'beforeId',
 		type: 'string',
-		description: 'Insert before this layer id. Changing it moves the layer.'
+		description:
+			'Insert before this layer id instead of the place in the markup. Changing it moves the layer.'
 	},
 	{
 		name: 'metadata',
@@ -103,7 +105,8 @@ const LAYER_PROPS: PropDoc[] = [
 	{
 		name: 'children',
 		type: 'Snippet<[{ id: string }]>',
-		description: 'Rendered once the layer is in the style, with its id.'
+		description:
+			'Rendered once the layer has been added, with its id, and kept while a style swap or a source recreate puts the layer back.'
 	},
 	{
 		name: 'on<event>',
@@ -144,6 +147,8 @@ function layerDoc(
 		usage,
 		props: LAYER_PROPS,
 		notes: [
+			'Layers are drawn in markup order: each goes below the next layer component after it, or on top of the style when there is none, also when it mounts later inside an {#if} or {#each}. beforeId overrides this for one layer.',
+			'A beforeId that names no layer is reported through onerror once. The layer is added on top, and moves below that layer if a layer component adds it later.',
 			'Paint and layout changes are pushed property by property. Recreating a layer to change one colour would drop its tiles and restart every transition.'
 		],
 		...extra
@@ -226,7 +231,7 @@ export const COMPONENTS: ComponentDoc[] = [
 		bindings: ['map', 'ready', 'center', 'zoom', 'bearing', 'pitch'],
 		notes: [
 			'A map with no height renders nothing. The container fills its parent by default, so give the parent a height or pass one through style.',
-			'Changing mapStyle swaps the style rather than recreating the map. Descendants re-add themselves once the replacement has loaded.',
+			'Changing mapStyle swaps the style rather than recreating the map. Once the replacement is usable, the library puts back every source, layer, terrain and feature state in the tree, the layers in markup order, and the other style components apply themselves again.',
 			'Two-way camera binding terminates by comparison, not a mutex: an update that matches where the map already is does nothing.',
 			'onmoveend, onmove and the other camera events fire for moves made from code too, and some arrive during setup, before anyone touches the map: MapLibre jumps to the style camera when the style loads if you gave no center, zoom or bounds, and moves when the container changes size. This component also moves the map when padding changes and when center, zoom, bearing or pitch disagree with it. To react only to the person, check event.originalEvent: gestures carry the DOM event that started them, moves from code carry none.',
 			'onerror receives errors MapLibre reports while the map runs, such as a failed style, tile, sprite or glyph request, with the Error in event.error. Without a handler, MapLibre logs them to the console.',
@@ -940,10 +945,15 @@ export const COMPONENTS: ComponentDoc[] = [
 				required: true,
 				description: 'Your layer. MapLibre calls its onAdd, render and onRemove hooks.'
 			},
-			{ name: 'beforeId', type: 'string', description: 'Insert before this layer id.' }
+			{
+				name: 'beforeId',
+				type: 'string',
+				description:
+					'Insert before this layer id instead of the place in the markup. Changing it moves the layer.'
+			}
 		],
 		notes: [
-			'MapLibre owns the rendering hooks; this component owns when the layer is in the style, including re-adding it after a style swap.',
+			'MapLibre owns the rendering hooks; this component owns when the layer is in the style, including re-adding it after a style swap, and keeps it in markup order among the other layers.',
 			'Use args.defaultProjectionData.mainMatrix for your projection uniform. v6 moved it there so one layer works under both mercator and globe; the older args.modelViewProjectionMatrix still exists, compiles, and draws nothing you can see.',
 			'A shader that fails to compile is silent — the draw call just produces nothing. Check COMPILE_STATUS and LINK_STATUS, or you will debug geometry that was never the problem.',
 			'Position vertices in mercator units from MercatorCoordinate.fromLngLat, so they stay pinned as the map moves.'
@@ -1154,6 +1164,7 @@ export const COMPONENTS: ComponentDoc[] = [
 		],
 		notes: [
 			'Unmounting restores whatever the style itself declared, so mounting this inside an {#if} is a safe on/off switch.',
+			'Waits for its source: terrain is set once the raster-dem source is in the style, also when the source mounts later or is recreated.',
 			'Terrain needs pitch to be visible. A flat top-down map looks identical with it on or off.',
 			'Let the TileJSON declare the encoding when it can. Decoding terrain-rgb data as terrarium does not fail — it produces plausible-looking nonsense.',
 			'Terrain also needs a basemap with detail at your zoom. Draped over a world-countries style it renders as a flat coloured field, which reads as broken terrain.'
@@ -1396,6 +1407,7 @@ export const COMPONENTS: ComponentDoc[] = [
 		],
 		notes: [
 			'Unmounting removes the keys it set, so there is never a setFeatureState left without its matching removeFeatureState.',
+			'Waits for its source, and sets the state again whenever the source is added anew: after a style swap, a recreate, or a later mount.',
 			'Only its own keys are removed, on unmount and when a key leaves state, so a hover and a selection on the same feature can be two components.',
 			'Features need ids. GeoJSON features can carry an id directly, or map a property with promoteId on the source.'
 		],

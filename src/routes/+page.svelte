@@ -75,7 +75,7 @@ ${CLOSE_SCRIPT}
 	const principles = [
 		{
 			title: 'The component tree is the style tree',
-			body: 'A layer nested inside a source inherits its id. Nesting is the wiring — and it makes teardown order correct for free, because Svelte destroys children before parents, exactly as MapLibre requires.'
+			body: 'Layers are drawn in markup order, whenever each one mounts. A layer nested in a source inherits its id, waits until the source is in the style, and leaves before it does. A style swap puts the whole tree back.'
 		},
 		{
 			title: 'Updates are surgical, never destructive',
