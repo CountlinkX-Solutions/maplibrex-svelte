@@ -36,8 +36,8 @@
 	bind:ready
 	style="width: 400px; height: 300px"
 >
-	<!-- `closeButton` is explicit so the user-close tests do not depend on a default. -->
-	<Popup lngLat={[0, 0]} {className} closeButton bind:open>
+	<!-- No closeButton, closeOnClick or focusAfterOpen: the tests rely on MapLibre's defaults. -->
+	<Popup lngLat={[0, 0]} {className} bind:open>
 		<p data-testid="popup-content">Standalone</p>
 	</Popup>
 </MapLibre>

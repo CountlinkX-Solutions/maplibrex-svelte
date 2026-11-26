@@ -493,7 +493,8 @@ export const COMPONENTS: ComponentDoc[] = [
 				name: 'data',
 				type: 'GeoJSON | string',
 				required: true,
-				description: 'Inline GeoJSON or a URL. Changing it calls setData.'
+				description:
+					'Inline GeoJSON or a URL. Compared by reference: a new value calls setData, a mutation in place does not reach the map.'
 			},
 			{
 				name: 'cluster',
@@ -517,6 +518,7 @@ export const COMPONENTS: ComponentDoc[] = [
 		],
 		notes: [
 			'A data change calls setData and keeps the source alive. Any other change has no setter upstream and recreates the source, which takes its layers down and puts them back.',
+			'data is compared by reference and never walked, so replace it rather than mutate it. A new object calls setData even when it is equal to the old one. A mutation in place, such as features.push on a $state object, keeps the reference and never reaches the map; $state.raw suits data you replace.',
 			'Feature state needs feature ids. Set them on the features, or map a property with promoteId.'
 		],
 		examples: [
@@ -1080,6 +1082,12 @@ export const COMPONENTS: ComponentDoc[] = [
 				type: 'boolean',
 				default: 'false',
 				description: 'Closes when the map moves.'
+			},
+			{
+				name: 'focusAfterOpen',
+				type: 'boolean',
+				default: 'true',
+				description: 'Moves focus to the first focusable element in the popup when it opens.'
 			},
 			{
 				name: 'anchor',

@@ -131,6 +131,22 @@ Each takes its native options as props plus `position`, and exposes `bind:contro
 
 `<GeoJSONSource>`, `<VectorSource>`, `<RasterSource>`, `<RasterDEMSource>`, `<ImageSource>`, `<VideoSource>`, `<CanvasSource>`, and the generic `<Source>` which takes a raw `SourceSpecification`.
 
+`<GeoJSONSource>` compares `data` by reference and never walks it, so a large collection costs nothing to compare. **Replace the data to update the map, do not mutate it.** A new object calls `setData`, even when it is equal to the old one. A mutation in place, such as `data.features.push(feature)` on a `$state` object, keeps the reference and never reaches the map. `$state.raw` suits data you replace, because it skips the deep proxy:
+
+```svelte
+<script lang="ts">
+	let points = $state.raw(initialPoints);
+
+	function add(feature: GeoJSON.Feature) {
+		points = { ...points, features: [...points.features, feature] };
+	}
+</script>
+
+<GeoJSONSource id="points" data={points}>
+	<CircleLayer id="points-dots" paint={{ 'circle-radius': 6 }} />
+</GeoJSONSource>
+```
+
 ### Layers
 
 `<FillLayer>`, `<LineLayer>`, `<SymbolLayer>`, `<CircleLayer>`, `<HeatmapLayer>`, `<FillExtrusionLayer>`, `<RasterLayer>`, `<HillshadeLayer>`, `<ColorReliefLayer>`, `<BackgroundLayer>`, and the generic `<Layer>`.
