@@ -1,9 +1,12 @@
 name: CI
 
+# Runs when something lands on main, not on every pull request push. Run the
+# same checks locally before opening a pull request: lint, check, test, prepack.
 on:
   push:
     branches: [main]
-  pull_request:
+  # Lets you run the checks on any branch by hand.
+  workflow_dispatch:
 
 # A new push to the same ref makes the previous run irrelevant.
 concurrency:
