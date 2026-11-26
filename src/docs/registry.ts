@@ -1191,7 +1191,8 @@ export const COMPONENTS: ComponentDoc[] = [
 		notes: [
 			'Nested inside a Marker, the marker handles open and close on click. Standalone, the open prop drives it.',
 			'bind:open stays truthful after a close button click or a closeOnClick, because the popup reports its own state back.',
-			'closeButton, closeOnClick, closeOnMove, focusAfterOpen, anchor, className and locationOccludedOpacity have no setter upstream, so changing one builds a new popup. An open popup stays open, and bind:open does not change.',
+			'closeButton, closeOnClick, closeOnMove, focusAfterOpen, anchor and locationOccludedOpacity have no setter upstream, so changing one builds a new popup. An open popup stays open, bind:open does not change, and onclose is not called.',
+			'className changes in place, and the popup keeps it when it opens again.',
 			'maxWidth, offset, padding and subpixelPositioning change in place, and unsetting one goes back to the default MapLibre uses without it. Unsetting lngLat leaves a standalone popup where it was, as MapLibre has no default position.'
 		],
 		examples: [

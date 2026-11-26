@@ -39,6 +39,10 @@
 
 	const context = getMapContext();
 	const markerContext = getMarkerContext();
+
+	function classNames(value: string): string[] {
+		return value.split(/\s+/).filter(Boolean);
+	}
 	const attachedToMarker = markerContext !== null;
 
 	// No setters exist for these, so a change means a new popup. MapLibre copies
@@ -52,7 +56,6 @@
 				closeOnMove: rest.closeOnMove,
 				focusAfterOpen: rest.focusAfterOpen,
 				anchor: rest.anchor,
-				className: rest.className,
 				locationOccludedOpacity: rest.locationOccludedOpacity
 			}).filter(([, value]) => value !== undefined)
 		) as PopupOptions
@@ -84,6 +87,7 @@
 		const instance = untrack(() => {
 			const created = new MapLibrePopup({
 				...constructorOnly,
+				...(rest.className !== undefined ? { className: rest.className } : {}),
 				...(maxWidth !== undefined ? { maxWidth } : {}),
 				...(offset !== undefined ? { offset } : {}),
 				...(padding !== undefined ? { padding } : {}),
@@ -207,9 +211,29 @@
 		untrack(() => instance.setSubpixelPositioning(next));
 	});
 
+	// MapLibre adds and removes a popup's classes in place, but only on the
+	// container of an open popup, and builds a new container from the options
+	// each time the popup opens, so both are updated.
+	$effect(() => {
+		const instance = popup;
+		const next = rest.className ?? '';
+		if (!instance) return;
+
+		untrack(() => {
+			const previous = instance.options.className ?? '';
+			if (previous === next) return;
+			for (const name of classNames(previous)) instance.removeClassName(name);
+			instance.options.className = next;
+			for (const name of classNames(next)) instance.addClassName(name);
+		});
+	});
+
+	// The old popup's `close` during a rebuild is not the consumer's business:
+	// the popup did not close for them.
 	bindEvents(
 		() => popup,
-		() => rest
+		() => rest,
+		(name) => !(name === 'close' && rebuilding)
 	);
 </script>
 
