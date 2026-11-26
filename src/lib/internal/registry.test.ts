@@ -89,10 +89,17 @@ type Anchor = { position: number };
 function setup(basemap?: { sources?: string[]; layers?: string[] }) {
 	const map = new FakeMap(basemap);
 	const reported: string[] = [];
+	const deferred: Array<() => void> = [];
 	const registry = createStyleRegistry<FakeMap, Anchor>({
 		report: (error) => reported.push(error.message),
-		compare: (a, b) => a.position - b.position
+		compare: (a, b) => a.position - b.position,
+		defer: (check) => deferred.push(check)
 	});
+
+	/** Runs the checks the registry deferred, as the end of a Svelte update would. */
+	function settle() {
+		for (const check of deferred.splice(0)) check();
+	}
 
 	function source(id: string): SourceEntry<FakeMap> {
 		return {
@@ -118,6 +125,7 @@ function setup(basemap?: { sources?: string[]; layers?: string[] }) {
 	function state(name: string, sourceId: string): DependentEntry<FakeMap, Anchor> {
 		return {
 			source: sourceId,
+			name: `<${name}>`,
 			apply: (target) => {
 				target.log.push(`apply ${name}`);
 			},
@@ -127,7 +135,7 @@ function setup(basemap?: { sources?: string[]; layers?: string[] }) {
 		};
 	}
 
-	return { map, registry, reported, source, layer, state };
+	return { map, registry, reported, settle, source, layer, state };
 }
 
 function permutations<T>(items: T[]): T[][] {
@@ -506,5 +514,142 @@ describe('style registry: style swaps', () => {
 
 		expect(map.log).toEqual([]);
 		expect(registry.started).toBe(false);
+	});
+});
+
+describe('style registry: sources nothing provides (#55)', () => {
+	it('reports a dependent still waiting once the update that loaded the style is over', () => {
+		const { map, registry, reported, settle, layer, state } = setup();
+		registry.addDependent(layer('l', 1, { source: 'typo' }));
+		registry.addDependent(state('Terrain', 'no-dem'));
+
+		registry.start(map);
+		expect(reported).toEqual([]);
+
+		settle();
+		expect(reported).toEqual([
+			expect.stringMatching(/^\[maplibrex\] Layer "l" is waiting for source "typo"/),
+			expect.stringMatching(/^\[maplibrex\] <Terrain> is waiting for source "no-dem"/)
+		]);
+	});
+
+	it('reports each entry once, across style loads', () => {
+		const { map, registry, reported, settle, layer } = setup();
+		registry.addDependent(layer('l', 1, { source: 'typo' }));
+		registry.start(map);
+		settle();
+
+		registry.styleLoading();
+		registry.styleLoaded();
+		settle();
+
+		expect(reported).toHaveLength(1);
+	});
+
+	it('does not report a source a component registers within the same update', () => {
+		const { map, registry, reported, settle, source, layer } = setup();
+		registry.start(map);
+
+		registry.addDependent(layer('l', 1, { source: 's' }));
+		registry.addSource(source('s'));
+		settle();
+
+		expect(reported).toEqual([]);
+		expect(map.order).toEqual(['l']);
+	});
+
+	it('does not report a source the map already has, from the basemap or added by hand', () => {
+		const { map, registry, reported, settle, layer } = setup({ sources: ['basemap'] });
+		registry.addDependent(layer('on-basemap', 1, { source: 'basemap' }));
+		registry.addDependent(layer('on-manual', 2, { source: 'manual' }));
+
+		registry.start(map);
+		map.sources.add('manual');
+		settle();
+
+		expect(reported).toEqual([]);
+	});
+
+	it('does not report a registered source that the map refused', () => {
+		const { map, registry, reported, settle, layer } = setup();
+		registry.addSource({ id: 'refused', add: () => false, remove: () => {} });
+		registry.addDependent(layer('l', 1, { source: 'refused' }));
+
+		registry.start(map);
+		settle();
+
+		expect(reported).toEqual([]);
+	});
+
+	it('checks nothing before the style is usable', () => {
+		const { map, registry, reported, settle, layer } = setup();
+		registry.addDependent(layer('early', 1, { source: 'typo' }));
+		settle();
+		expect(reported).toEqual([]);
+
+		registry.start(map);
+		registry.styleLoading();
+		registry.addDependent(layer('during-swap', 2, { source: 'typo-2' }));
+		settle();
+
+		expect(reported).toEqual([]);
+	});
+
+	it('reports a dependent that registers after the style loaded', () => {
+		const { map, registry, reported, settle, layer } = setup();
+		registry.start(map);
+		settle();
+
+		registry.addDependent(layer('late', 1, { source: 'typo' }));
+		settle();
+
+		expect(reported).toEqual([
+			expect.stringContaining('Layer "late" is waiting for source "typo"')
+		]);
+	});
+
+	it('does not report a dependent whose source the app removed after it was applied', () => {
+		const { map, registry, reported, settle, source, layer } = setup();
+		registry.start(map);
+		const registration = registry.addSource(source('s'));
+		registry.addDependent(layer('l', 1, { source: 's' }));
+		settle();
+
+		// The source goes, and in the same update a new dependent waits for a
+		// source that arrives right after it, which runs the check.
+		registration.unregister();
+		registry.addDependent(layer('other', 2, { source: 't' }));
+		registry.addSource(source('t'));
+		settle();
+
+		expect(reported).toEqual([]);
+		expect(map.order).toEqual(['other']);
+	});
+
+	it('reports a dependent whose source the new style no longer has', () => {
+		const { map, registry, reported, settle, layer } = setup({ sources: ['basemap'] });
+		registry.addDependent(layer('l', 1, { source: 'basemap' }));
+		registry.start(map);
+		settle();
+		expect(reported).toEqual([]);
+
+		registry.styleLoading();
+		map.replaceStyle();
+		registry.styleLoaded();
+		settle();
+
+		expect(reported).toEqual([
+			expect.stringContaining('Layer "l" is waiting for source "basemap"')
+		]);
+	});
+
+	it('does not report a dependent that left before the check', () => {
+		const { map, registry, reported, settle, layer } = setup();
+		registry.start(map);
+
+		registry.addDependent(layer('gone', 1, { source: 'typo' })).unregister();
+		settle();
+
+		expect(reported).toEqual([]);
 	});
 });

@@ -77,7 +77,12 @@ describe('terrain and feature state', () => {
 			});
 
 			expect(uncaught.messages()).toEqual([]);
-			expect(errors.messages()).toEqual([]);
+			// Nothing provided either source when the style loaded, so each wait
+			// was reported once (#55); both still went in when the sources came.
+			expect(errors.messages()).toEqual([
+				expect.stringMatching(/<Terrain> is waiting for source "dem"/),
+				expect.stringMatching(/<FeatureState id="1"> is waiting for source "pts"/)
+			]);
 		} finally {
 			await uncaught.attempt(() => screen.unmount());
 		}

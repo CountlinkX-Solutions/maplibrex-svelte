@@ -34,6 +34,7 @@
 
 		const registration = registry.addDependent({
 			source: sourceId,
+			name: '<Terrain>',
 			apply: (map) => {
 				previous = map.getTerrain();
 				map.setTerrain({

@@ -185,6 +185,10 @@ describe('layers attached with source="id" (#14)', () => {
 		});
 
 		await vi.waitFor(() => expect(map.getLayer('attached')?.source).toBe('manual'), WAIT);
-		expect(errors.messages()).toEqual([]);
+		// The source arrived after the update in which the style loaded, so the
+		// wait was reported once (#55), and the layer still went in.
+		expect(errors.messages()).toEqual([
+			expect.stringMatching(/Layer "attached" is waiting for source "manual"/)
+		]);
 	});
 });

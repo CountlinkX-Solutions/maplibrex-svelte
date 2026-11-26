@@ -7,7 +7,7 @@
 		PaddingOptions,
 		StyleSpecification
 	} from 'maplibre-gl';
-	import { untrack, type Snippet } from 'svelte';
+	import { tick, untrack, type Snippet } from 'svelte';
 	import { setMapContext, setStyleRegistry } from '../context.js';
 	import { sameLngLat, sameNumber } from '../internal/camera.js';
 	import { bindEvents } from '../internal/bind-events.svelte.js';
@@ -92,7 +92,10 @@
 	// Errors the library finds go where MapLibre's own go: to `onerror`, or to
 	// the console when nobody listens.
 	const registry = createStyleRegistry({
-		report: (error) => untrack(() => map)?.fire(new ErrorEvent(error))
+		report: (error) => untrack(() => map)?.fire(new ErrorEvent(error)),
+		// Once Svelte has run the effects of the current update, the components
+		// mounting in it have registered their sources.
+		defer: (check) => void tick().then(check)
 	});
 	setStyleRegistry(registry);
 
