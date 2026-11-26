@@ -44,3 +44,21 @@ export function sameLngLat(
 
 	return sameNumber(left[0], right[0], epsilon) && sameNumber(left[1], right[1], epsilon);
 }
+
+export type CameraKey = 'center' | 'zoom' | 'bearing' | 'pitch';
+
+export const CAMERA_KEYS: readonly CameraKey[] = ['center', 'zoom', 'bearing', 'pitch'];
+
+/** The camera props of `<MapLibre>`, any of which may be unset. */
+export type CameraValues = {
+	center?: LngLatLike;
+	zoom?: number;
+	bearing?: number;
+	pitch?: number;
+};
+
+/** Compares two values of one camera prop, within {@link CAMERA_EPSILON}. */
+export function sameCamera(key: CameraKey, a: unknown, b: unknown): boolean {
+	if (key === 'center') return sameLngLat(a as LngLatLike | undefined, b as LngLatLike | undefined);
+	return sameNumber(a as number | undefined, b as number | undefined);
+}

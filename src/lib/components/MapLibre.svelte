@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { ErrorEvent, Map as MapLibreMap } from 'maplibre-gl';
 	import type {
+		CameraOptions,
 		LngLatBoundsLike,
 		LngLatLike,
 		MapOptions,
@@ -9,7 +10,14 @@
 	} from 'maplibre-gl';
 	import { tick, untrack, type Snippet } from 'svelte';
 	import { setMapContext, setStyleRegistry } from '../context.js';
-	import { sameLngLat, sameNumber } from '../internal/camera.js';
+	import {
+		CAMERA_KEYS,
+		sameCamera,
+		sameLngLat,
+		sameNumber,
+		type CameraKey,
+		type CameraValues
+	} from '../internal/camera.js';
 	import { bindEvents } from '../internal/bind-events.svelte.js';
 	import { createStyleRegistry } from '../internal/registry.js';
 	import { trackStyle, type StyleTracker } from '../internal/style-status.js';
@@ -41,7 +49,12 @@
 		padding?: PaddingOptions;
 		/** Enables or disables gesture handlers at runtime. Omitted keys are left alone. */
 		interactions?: InteractionRequest;
-		/** How camera prop changes are applied. @defaultValue 'ease' */
+		/**
+		 * How camera prop changes are applied. Each camera prop assigned is a
+		 * target the map keeps moving to until it gets there, also when another
+		 * one is assigned during the move; a gesture or a camera call on the map
+		 * ends it. @defaultValue 'ease'
+		 */
 		cameraMode?: CameraMode;
 		/**
 		 * Escape hatch for any `MapOptions` this component does not surface.
@@ -149,6 +162,13 @@
 		defer: (check) => void tick().then(check)
 	});
 	setStyleRegistry(registry);
+
+	function readCamera(instance: MapLibreMap, key: CameraKey): unknown {
+		if (key === 'center') return instance.getCenter();
+		if (key === 'zoom') return instance.getZoom();
+		if (key === 'bearing') return instance.getBearing();
+		return instance.getPitch();
+	}
 
 	function reportCreationFailure(reason: Error): void {
 		const handler = events.onerror;
@@ -270,24 +290,54 @@
 		untrack(() => tracker?.request(nextStyle));
 	});
 
-	// Map -> props. Guarded by value comparison rather than a mutex flag, which
-	// also absorbs the write the opposite effect is about to make.
+	/**
+	 * The camera as the props last held it, what this component last wrote
+	 * back to them, and the targets of the camera move it started that the map
+	 * has not reached yet. Plain variables: the effects below compare against
+	 * them and must not re-run when they change.
+	 */
+	let seen: CameraValues = {};
+	let written: CameraValues = {};
+	let targets: CameraValues = {};
+	/** A camera move this component started has not ended yet. */
+	let commanded = false;
+	/** A camera call of this component is running, which ends the move it replaces. */
+	let commanding = false;
+
+	// Map -> props. Every frame of a move is written back, including the frames
+	// of an animation this component started, so a bound prop shows where the
+	// map is. What was written is kept so that the opposite effect can tell
+	// these writes from a value the parent assigned.
 	$effect(() => {
 		const instance = map;
 		if (!instance) return;
 
 		const sync = () => {
 			const nextCenter = instance.getCenter();
-			if (!sameLngLat(center, nextCenter)) center = [nextCenter.lng, nextCenter.lat];
-			if (!sameNumber(zoom, instance.getZoom())) zoom = instance.getZoom();
-			if (!sameNumber(bearing, instance.getBearing())) bearing = instance.getBearing();
-			if (!sameNumber(pitch, instance.getPitch())) pitch = instance.getPitch();
+			if (!sameLngLat(center, nextCenter)) {
+				center = written.center = [nextCenter.lng, nextCenter.lat];
+			}
+			if (!sameNumber(zoom, instance.getZoom())) zoom = written.zoom = instance.getZoom();
+			if (!sameNumber(bearing, instance.getBearing())) {
+				bearing = written.bearing = instance.getBearing();
+			}
+			if (!sameNumber(pitch, instance.getPitch())) pitch = written.pitch = instance.getPitch();
+		};
+
+		// A move ends at its targets, or where a gesture or a call on the map that
+		// interrupted it left the camera. Either way the targets are spent; the
+		// end of a move replaced by this component's next call is not.
+		const ended = () => {
+			if (commanding) return;
+			commanded = false;
+			targets = {};
 		};
 
 		const subscriptions = [
 			instance.on('move', sync),
 			instance.on('rotate', sync),
-			instance.on('pitch', sync)
+			instance.on('pitch', sync),
+			instance.on('moveend', ended)
 		];
 
 		return () => {
@@ -295,32 +345,50 @@
 		};
 	});
 
-	// Props -> map. A no-op when the map is already where the props say it is,
-	// which is what stops the two directions from feeding each other.
+	// Props -> map. Only a prop the parent assigned becomes a target: a value
+	// this component wrote back is where the map already is. Each target is
+	// kept until the move ends, and sent again with any later one, since a new
+	// camera call stops the move in progress where it is.
 	$effect(() => {
 		const instance = map;
-		const target = { center, zoom, bearing, pitch };
+		const props: CameraValues = { center, zoom, bearing, pitch };
 		if (!instance) return;
 
-		const moved =
-			(target.center !== undefined && !sameLngLat(target.center, instance.getCenter())) ||
-			(target.zoom !== undefined && !sameNumber(target.zoom, instance.getZoom())) ||
-			(target.bearing !== undefined && !sameNumber(target.bearing, instance.getBearing())) ||
-			(target.pitch !== undefined && !sameNumber(target.pitch, instance.getPitch()));
-
-		if (!moved) return;
-
-		const cameraOptions = {
-			...(target.center !== undefined && { center: target.center }),
-			...(target.zoom !== undefined && { zoom: target.zoom }),
-			...(target.bearing !== undefined && { bearing: target.bearing }),
-			...(target.pitch !== undefined && { pitch: target.pitch })
-		};
-
 		untrack(() => {
-			if (cameraMode === 'jump') instance.jumpTo(cameraOptions);
-			else if (cameraMode === 'fly') instance.flyTo(cameraOptions);
-			else instance.easeTo(cameraOptions);
+			let assigned = false;
+			for (const key of CAMERA_KEYS) {
+				const value = props[key];
+				if (sameCamera(key, value, seen[key])) continue;
+				seen = { ...seen, [key]: value };
+				if (value === undefined || sameCamera(key, value, written[key])) continue;
+				targets = { ...targets, [key]: value };
+				assigned = true;
+			}
+			if (!assigned) return;
+
+			const away = CAMERA_KEYS.some(
+				(key) =>
+					targets[key] !== undefined && !sameCamera(key, targets[key], readCamera(instance, key))
+			);
+			// Where the map already is, nothing moves, unless a move of this
+			// component's is under way that this one has to stop.
+			if (!away && !commanded) {
+				targets = {};
+				return;
+			}
+
+			const options: CameraOptions = { ...targets };
+			commanding = true;
+			try {
+				if (cameraMode === 'jump') instance.jumpTo(options);
+				else if (cameraMode === 'fly') instance.flyTo(options);
+				else instance.easeTo(options);
+			} finally {
+				commanding = false;
+			}
+			// A jump, or a move that reduced motion made instant, has ended already.
+			commanded = instance.isMoving();
+			if (!commanded) targets = {};
 		});
 	});
 
