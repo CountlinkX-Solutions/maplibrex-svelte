@@ -12,6 +12,22 @@ You describe the map as a component tree. The library keeps that tree and the im
 	import { MapLibre, NavigationControl, GeoJSONSource, CircleLayer } from 'maplibrex-svelte';
 
 	let zoom = $state(4);
+
+	const cities: GeoJSON.FeatureCollection = {
+		type: 'FeatureCollection',
+		features: [
+			{
+				type: 'Feature',
+				properties: { name: 'Barcelona' },
+				geometry: { type: 'Point', coordinates: [2.17, 41.38] }
+			},
+			{
+				type: 'Feature',
+				properties: { name: 'Madrid' },
+				geometry: { type: 'Point', coordinates: [-3.7, 40.42] }
+			}
+		]
+	};
 </script>
 
 <div style="height: 400px">
@@ -41,7 +57,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 
 ## Should you use this?
 
-Two other libraries cover the same ground, both mature and both published this month:
+Two other libraries cover the same ground. Both are mature, and both had releases in November 2026, when this comparison was written:
 
 |                                                                          | maplibre-gl                           | Svelte        | Runtime dependencies                  |
 | ------------------------------------------------------------------------ | ------------------------------------- | ------------- | ------------------------------------- |
@@ -49,7 +65,7 @@ Two other libraries cover the same ground, both mature and both published this m
 | [`svelte-maplibre-gl`](https://www.npmjs.com/package/svelte-maplibre-gl) | peer (`^5.19 \|\| ^6`)                | ≥5            | —                                     |
 | this one                                                                 | peer (`^6`)                           | 5, runes only | none                                  |
 
-**If you want something proven, use one of those two.** They have real users, real issues filed, and a track record this package does not have yet. This one is at `0.1.0`, and the API has already moved once during its first week.
+**If you want something proven, use one of those two.** They have real users, real issues filed, and a track record this package does not have yet. This one is still at `0.1`, and the API has already moved once during its first week.
 
 It exists for a narrower set of preferences: no runtime dependencies at all, MapLibre 6 and Svelte 5 runes only, event props derived from MapLibre's own event maps rather than enumerated by hand, and updates that are surgical by default — a paint change calls one setter, and recreation happens only where MapLibre exposes no alternative.
 
@@ -74,6 +90,27 @@ setWorkerUrl('/maplibre/maplibre-gl-worker.mjs');
 This repository does it with a small Vite plugin in `vite-plugins/maplibre-worker.ts` that reads both files out of `node_modules` at build time, so they cannot drift from the installed version. Copy it if you want the same behaviour.
 
 Two things that look like fixes but are not: emitting only the worker with a `?url` import leaves its shared chunk missing, and a bare side-effect import of your setup module is legal to tree-shake under a narrow `sideEffects` list — export a function and call it instead.
+
+## Content-Security-Policy
+
+Since 0.1.1 the library writes no inline `style` attributes: the elements it keeps out of sight until MapLibre takes them over use the `hidden` attribute. Its one CSS rule, which sizes the map container, is ordinary Svelte component CSS and ends up wherever your build puts component styles (a CSS file in a Vite production build).
+
+What MapLibre itself needs, checked against the `maplibre-gl` version this repository tests with (6.6):
+
+| Directive           | Why                                                                                                                                                                           |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `worker-src 'self'` | The worker, served from your own origin as in the Vite step above. A worker URL on another origin makes MapLibre start it from a `blob:` URL, which needs `worker-src blob:`. |
+| `img-src data:`     | `maplibre-gl.css` draws the control icons as `data:` SVG images.                                                                                                              |
+| `connect-src`       | Every host your style, tiles, sprites and glyphs come from. MapLibre fetches them.                                                                                            |
+| `style-src 'self'`  | `maplibre-gl.css`, served as a stylesheet. Positions MapLibre sets from script, on markers and popups, go through `element.style`, which `style-src` does not restrict.       |
+
+Some setups need more. With `refreshExpiredTiles: false`, raster tiles load through image elements, so their hosts need `img-src`. `<VideoSource>` needs `media-src` for its video hosts.
+
+Three things to check in your own app:
+
+- A `style` prop on `<MapLibre>` is rendered as a `style` attribute in server-rendered HTML. Under a strict `style-src`, size the map with `class` instead.
+- `vite dev` injects CSS through `<style>` elements, so test a strict policy against a production build.
+- MapLibre assigns `innerHTML` in its attribution control, its scale control and the popup close button. Enforcing Trusted Types (`require-trusted-types-for 'script'`) breaks them unless you provide a default policy.
 
 ## Requirements
 
@@ -111,6 +148,31 @@ Changing `mapStyle` swaps the style in place rather than recreating the map; des
 <MapLibre mapStyle={style} interactions={{ scrollZoom: false, dragRotate: allowRotation }} />
 ```
 
+`options` passes any other `MapOptions` to the MapLibre `Map` constructor. It is read once, when the map is created, and later changes to it have no effect. Use `bind:map` for anything you need to change at runtime.
+
+Errors MapLibre reports while the map runs, such as a style, tile, sprite or glyph request that fails or a style that does not validate, reach `onerror` with the `Error` in `event.error`. Without a handler, MapLibre writes them to the console.
+
+```svelte
+<MapLibre mapStyle={style} onerror={(event) => reportMapError(event.error)} />
+```
+
+**Move events fire even when nobody has touched the map.** `onmovestart`, `onmove`, `onmoveend` and the matching zoom, rotate and pitch events fire for every camera change, not only for gestures, and some arrive during setup:
+
+- MapLibre jumps to the style's own camera when the style finishes loading, if you gave no `center`, `zoom` or `bounds`. It also fires a move whenever the map container changes size.
+- `<MapLibre>` moves the map when you change `padding`, and when `center`, `zoom`, `bearing` or `pitch` disagree with where the map is.
+- Your own `jumpTo`, `easeTo`, `flyTo` and `fitBounds` calls fire them too.
+
+To react only to the person using the map, check `event.originalEvent`. Moves started by a gesture (drag, scroll, pinch, keyboard, and the glide after a drag) carry the DOM event that started them. Moves made from code carry none.
+
+```svelte
+<MapLibre
+	mapStyle={style}
+	onmoveend={(event) => {
+		if (event.originalEvent) saveView(event.target.getCenter(), event.target.getZoom());
+	}}
+/>
+```
+
 ### Controls
 
 `<NavigationControl>`, `<ScaleControl>`, `<GeolocateControl>`, `<FullscreenControl>`, `<AttributionControl>`, `<GlobeControl>`, `<TerrainControl>`, `<LogoControl>`.
@@ -126,6 +188,18 @@ Each takes its native options as props plus `position`, and exposes `bind:contro
 ```
 
 `<Control>` is the generic escape hatch for any third-party `IControl`.
+
+**Attribution is written as HTML.** MapLibre puts the `customAttribution` you give `<AttributionControl>`, and the `attribution` of every source in the style, into the page as HTML. Before it does, it removes `<script>` elements, `on…` event-handler attributes, and `href` or `src` values that contain `javascript:` or `data:`. Nothing else is removed: links to any address, remote images (which can track whoever views the map), iframes, forms and `style` attributes all reach the page. Treat a style you did not write as untrusted HTML.
+
+MapLibre also adds an attribution control of its own to every map, whether or not you render `<AttributionControl>`. Pass `options={{ attributionControl: false }}` to turn it off, and render `<AttributionControl>` only after doing so, or the map shows two. There is no option yet to show attributions as plain text: with a style from a source you do not trust, turn the default off, leave `<AttributionControl>` out, and show the credits the data requires as ordinary Svelte text, which is escaped:
+
+```svelte
+<MapLibre mapStyle={untrustedStyle} options={{ attributionControl: false }}>
+	<CustomControl position="bottom-right">
+		<small>{credits}</small>
+	</CustomControl>
+</MapLibre>
+```
 
 ### Sources
 
@@ -289,7 +363,7 @@ The component surface is derived from the [official MapLibre GL JS examples](htt
 
 ## Documentation site
 
-`npm run dev` serves a documentation site alongside the library: a page per component, generated from a single registry so a component cannot ship with a page that disagrees with it, plus nine live demos and a playground.
+`npm run dev` serves a documentation site alongside the library: a page per component with a live demo, generated from a single hand-written registry (`src/docs/registry.ts`), plus a playground. Nothing checks the registry against the component types yet, so update it with the component.
 
 | Route               | What it is                                                                      |
 | ------------------- | ------------------------------------------------------------------------------- |

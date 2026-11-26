@@ -15,10 +15,30 @@
   import { MapLibre, NavigationControl, GeoJSONSource, CircleLayer } from 'maplibrex-svelte';
 
   let zoom = $state(4);
+
+  const cities: GeoJSON.FeatureCollection = {
+    type: 'FeatureCollection',
+    features: [
+      {
+        type: 'Feature',
+        properties: { name: 'Barcelona' },
+        geometry: { type: 'Point', coordinates: [2.17, 41.38] }
+      },
+      {
+        type: 'Feature',
+        properties: { name: 'Madrid' },
+        geometry: { type: 'Point', coordinates: [-3.7, 40.42] }
+      }
+    ]
+  };
 ${CLOSE_SCRIPT}
 
 <div style="height: 400px">
-  <MapLibre mapStyle={styleUrl} center={[2.17, 41.38]} bind:zoom>
+  <MapLibre
+    mapStyle="https://demotiles.maplibre.org/style.json"
+    center={[2.17, 41.38]}
+    bind:zoom
+  >
     <NavigationControl />
 
     <GeoJSONSource id="cities" data={cities}>
@@ -26,6 +46,15 @@ ${CLOSE_SCRIPT}
     </GeoJSONSource>
   </MapLibre>
 </div>`;
+
+	const workerSetup = `import { setWorkerUrl } from 'maplibre-gl';
+
+// Both files must sit in the same directory: the worker
+// imports its shared chunk by relative path. Add your base
+// path in front if the app is not served from the root.
+export function configureMapLibreWorker() {
+  setWorkerUrl('/maplibre/maplibre-gl-worker.mjs');
+}`;
 
 	const principles = [
 		{
@@ -84,12 +113,40 @@ ${CLOSE_SCRIPT}
 			Give the container a height, point at a style, and nest what you need. Everything below the
 			root reads the map from context.
 		</p>
+		<p>Before you build for production, add the worker step below.</p>
 		<p class="fineprint">
 			<code>maplibre-gl</code> is a peer dependency: it is the library being wrapped, so you own its version.
 			Two copies in one bundle would mean two WebGL contexts.
 		</p>
 	</div>
 	<CodeBlock code={quickStart} />
+</section>
+
+<section class="split" id="worker">
+	<div>
+		<h2>One Vite step you cannot skip</h2>
+		<p>
+			MapLibre 6 loads its web worker from a URL it builds at runtime, which no bundler can trace.
+			In a production build that request fails, and quietly: the map and its controls appear, but
+			every source renders as empty background because nothing parses tiles or GeoJSON.
+		</p>
+		<p>
+			Copy <code>maplibre-gl-worker.mjs</code> and <code>maplibre-gl-shared.mjs</code> from
+			<code>node_modules/maplibre-gl/dist</code> into one directory your app serves, and point MapLibre
+			at the copy before the first map is created.
+		</p>
+		<p class="fineprint">
+			This site copies them with a small Vite plugin that reads both files from
+			<code>node_modules</code> at build time, so they always match the installed version:
+			<a
+				href="https://github.com/CountlinkX-Solutions/maplibrex-svelte/blob/main/vite-plugins/maplibre-worker.ts"
+				rel="noreferrer"
+				target="_blank">vite-plugins/maplibre-worker.ts</a
+			>. Call the function once before the first map is created, in SvelteKit from the root layout.
+			Do not rely on a module imported only for its side effect: the bundler may drop it.
+		</p>
+	</div>
+	<CodeBlock code={workerSetup} language="ts" />
 </section>
 
 <section>

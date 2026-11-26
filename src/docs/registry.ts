@@ -1,9 +1,10 @@
 /**
  * The single source of truth for the documentation site.
  *
- * Component pages are generated from this data rather than hand-written, so a
- * new component cannot ship with a page that quietly disagrees with it. Lives
- * outside `src/lib` so none of it reaches the published package.
+ * Component pages are generated from this data, but the data itself is written
+ * by hand: nothing checks it against the component types, so update an entry
+ * whenever its component changes. Lives outside `src/lib` so none of it
+ * reaches the published package.
  */
 
 export type PropDoc = {
@@ -93,6 +94,16 @@ const LAYER_PROPS: PropDoc[] = [
 		name: 'beforeId',
 		type: 'string',
 		description: 'Insert before this layer id. Changing it moves the layer.'
+	},
+	{
+		name: 'metadata',
+		type: 'unknown',
+		description: 'Stored on the layer when it is added. Later changes are not applied.'
+	},
+	{
+		name: 'children',
+		type: 'Snippet<[{ id: string }]>',
+		description: 'Rendered once the layer is in the style, with its id.'
 	},
 	{
 		name: 'on<event>',
@@ -196,8 +207,9 @@ export const COMPONENTS: ComponentDoc[] = [
 			},
 			{
 				name: 'options',
-				type: 'Partial<MapOptions>',
-				description: 'Escape hatch for any MapOptions this component does not surface.'
+				type: "Partial<Omit<MapOptions, 'container' | 'style'>>",
+				description:
+					'Any other MapOptions, passed to the Map constructor. Read once, when the map is created: later changes have no effect.'
 			},
 			{ name: 'class', type: 'string', description: 'Applied to the map container element.' },
 			{
@@ -215,7 +227,10 @@ export const COMPONENTS: ComponentDoc[] = [
 		notes: [
 			'A map with no height renders nothing. The container fills its parent by default, so give the parent a height or pass one through style.',
 			'Changing mapStyle swaps the style rather than recreating the map. Descendants re-add themselves once the replacement has loaded.',
-			'Two-way camera binding terminates by comparison, not a mutex: an update that matches where the map already is does nothing.'
+			'Two-way camera binding terminates by comparison, not a mutex: an update that matches where the map already is does nothing.',
+			'onmoveend, onmove and the other camera events fire for moves made from code too, and some arrive during setup, before anyone touches the map: MapLibre jumps to the style camera when the style loads if you gave no center, zoom or bounds, and moves when the container changes size. This component also moves the map when padding changes and when center, zoom, bearing or pitch disagree with it. To react only to the person, check event.originalEvent: gestures carry the DOM event that started them, moves from code carry none.',
+			'onerror receives errors MapLibre reports while the map runs, such as a failed style, tile, sprite or glyph request, with the Error in event.error. Without a handler, MapLibre logs them to the console.',
+			'A production build needs the worker step described on the home page. Without it the map and its controls appear, but every source renders as empty background.'
 		],
 		examples: [
 			'Display a map',
@@ -406,7 +421,8 @@ export const COMPONENTS: ComponentDoc[] = [
 		],
 		notes: [
 			CONTROL_NOTE,
-			'The map adds one by default. Pass attributionControl: false through options before adding your own, or you get two.'
+			'The map adds one by default. Pass attributionControl: false through options before adding your own, or you get two.',
+			'customAttribution and the attribution of every source in the style are written as HTML. MapLibre first removes script elements, on… attributes and href or src values containing javascript: or data:, and keeps everything else, including links, remote images and iframes. With a style you do not trust, turn the default control off, leave this one out, and show the required credits as plain text in your own markup.'
 		],
 		examples: ['Change the default position for attribution'],
 		demo: 'control-attribution'
@@ -886,9 +902,10 @@ export const COMPONENTS: ComponentDoc[] = [
 		'Paints the area behind every other layer. The only layer with no source.',
 		`<BackgroundLayer id="bg" paint={{ 'background-color': '#0b1220' }} />`,
 		{
-			props: LAYER_PROPS.filter((prop) => !['source', 'sourceLayer'].includes(prop.name)),
+			// Background layers take no source and, per the style spec, no filter.
+			props: LAYER_PROPS.filter((prop) => !['source', 'sourceLayer', 'filter'].includes(prop.name)),
 			notes: [
-				'The only layer type that needs no source, so it is also the only one you can mount as a direct child of the map.'
+				'The only layer type that needs no source. Any other layer can also sit directly under the map, as long as you pass its source prop.'
 			],
 			demo: 'layer-background'
 		}
@@ -994,7 +1011,7 @@ export const COMPONENTS: ComponentDoc[] = [
 			{
 				name: 'color',
 				type: 'string',
-				description: 'Fill of the default pin. Ignored with children.'
+				description: 'Fill of the default pin. Ignored when content replaces the pin.'
 			},
 			{ name: 'scale', type: 'number', default: '1', description: 'Size of the default pin.' },
 			{

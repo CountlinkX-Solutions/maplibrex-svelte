@@ -40,7 +40,10 @@
 		interactions?: InteractionRequest;
 		/** How camera prop changes are applied. @defaultValue 'ease' */
 		cameraMode?: CameraMode;
-		/** Escape hatch for any `MapOptions` this component does not surface. */
+		/**
+		 * Escape hatch for any `MapOptions` this component does not surface.
+		 * Read once, when the map is created: later changes have no effect.
+		 */
 		options?: Partial<Omit<MapOptions, 'container' | 'style'>>;
 		/** Read-only binding to the underlying instance. */
 		map?: MapLibreMap | null;
