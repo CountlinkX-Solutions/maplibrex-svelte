@@ -25,3 +25,11 @@ export type PopupEventProps = EventProps<PopupEventType>;
 
 /** How a camera prop change is applied to the map. */
 export type CameraMode = 'jump' | 'ease' | 'fly';
+
+/**
+ * What `<MapLibre>` shows. `'loading'` until the first style is shown and
+ * while a new `mapStyle` loads, `'ready'` once the map shows the current
+ * `mapStyle`, `'error'` when the map could not be created or the current
+ * `mapStyle` failed to load.
+ */
+export type MapStatus = 'loading' | 'ready' | 'error';

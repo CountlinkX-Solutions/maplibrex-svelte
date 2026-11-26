@@ -7,22 +7,24 @@
 		PaddingOptions,
 		StyleSpecification
 	} from 'maplibre-gl';
-	import { untrack, type Snippet } from 'svelte';
+	import { tick, untrack, type Snippet } from 'svelte';
 	import { setMapContext, setStyleRegistry } from '../context.js';
 	import { sameLngLat, sameNumber } from '../internal/camera.js';
 	import { bindEvents } from '../internal/bind-events.svelte.js';
 	import { createStyleRegistry } from '../internal/registry.js';
+	import { trackStyle, type StyleTracker } from '../internal/style-status.js';
 	import {
 		planInteractionChanges,
 		readInteractionState,
 		type InteractionRequest
 	} from '../internal/interactions.js';
-	import type { CameraMode, MapEventProps } from '../types.js';
+	import type { CameraMode, MapEventProps, MapStatus } from '../types.js';
 
 	type Props = MapEventProps & {
 		/**
 		 * A style URL or an inline style specification. Changing it swaps the
-		 * style in place instead of recreating the map.
+		 * style in place instead of recreating the map, whenever it changes:
+		 * before the first style has loaded, and after a style failed.
 		 */
 		mapStyle: StyleSpecification | string;
 		/** Two-way. Written back as a `[lng, lat]` tuple as the user pans. */
@@ -46,10 +48,46 @@
 		 * Read once, when the map is created: later changes have no effect.
 		 */
 		options?: Partial<Omit<MapOptions, 'container' | 'style'>>;
-		/** Read-only binding to the underlying instance. */
+		/**
+		 * Read-only binding to the underlying instance. Stays `null` when the map
+		 * could not be created.
+		 */
 		map?: MapLibreMap | null;
-		/** Read-only binding: `true` once the style is loaded. */
+		/**
+		 * Read-only binding: `true` from the map's first `load` event until the
+		 * map is removed. It turns `true` in the same update in which `status`
+		 * first becomes `'ready'`, and unlike `status` it stays `true` while a
+		 * new `mapStyle` loads or after one fails.
+		 */
 		ready?: boolean;
+		/**
+		 * Read-only binding. `'loading'` until the first style is shown and again
+		 * while a new `mapStyle` loads; `'ready'` when the map shows the current
+		 * `mapStyle` and everything in the tree has been applied to it; `'error'`
+		 * when the map could not be created or the current `mapStyle` failed to
+		 * load. Setting another `mapStyle` after a failure loads it as usual.
+		 * Errors about tiles, sprites, glyphs or images do not change it.
+		 */
+		status?: MapStatus;
+		/** Read-only binding: the `Error` behind an `'error'` status, otherwise `null`. */
+		error?: Error | null;
+		/**
+		 * Rendered inside the map container, in place of the map, when the map
+		 * could not be created: from maplibre-gl 6.7 that means the browser could
+		 * not provide a WebGL2 context. Not rendered when a style fails to load,
+		 * since the map exists then and a new `mapStyle` recovers it.
+		 */
+		fallback?: Snippet<[{ error: Error }]>;
+		/**
+		 * MapLibre's `error` event: a style, tile, sprite or glyph request that
+		 * fails, a style that does not validate, and the problems this library
+		 * finds in the tree. Also called once when the map cannot be created,
+		 * with an `ErrorEvent` the library builds and no `target`, as there is no
+		 * map to fire it; `event.error` is then MapLibre's
+		 * `GPUInitializationError`. Without a handler, all of these are written
+		 * to the console.
+		 */
+		onerror?: (event: ErrorEvent) => void;
 		class?: string;
 		style?: string;
 		children?: Snippet<[{ map: MapLibreMap }]>;
@@ -68,6 +106,12 @@
 		options,
 		map = $bindable(null),
 		ready = $bindable(false),
+		// Written for the parent to read through `bind:`, and never read here.
+		/* eslint-disable no-useless-assignment */
+		status = $bindable('loading'),
+		error = $bindable(null),
+		/* eslint-enable no-useless-assignment */
+		fallback,
 		class: className,
 		style: containerStyle,
 		children,
@@ -76,6 +120,9 @@
 
 	let container = $state<HTMLDivElement | null>(null);
 	let styleEpoch = $state(0);
+	/** Why the map could not be created, which the fallback is rendered for. */
+	let failure = $state<Error | null>(null);
+	let tracker: StyleTracker | null = null;
 
 	setMapContext({
 		get map() {
@@ -90,11 +137,24 @@
 	});
 
 	// Errors the library finds go where MapLibre's own go: to `onerror`, or to
-	// the console when nobody listens.
+	// the console when nobody listens. They are told apart from style failures.
+	const ownErrors = new WeakSet<object>();
 	const registry = createStyleRegistry({
-		report: (error) => untrack(() => map)?.fire(new ErrorEvent(error))
+		report: (reported) => {
+			ownErrors.add(reported);
+			untrack(() => map)?.fire(new ErrorEvent(reported));
+		},
+		// Once Svelte has run the effects of the current update, the components
+		// mounting in it have registered their sources.
+		defer: (check) => void tick().then(check)
 	});
 	setStyleRegistry(registry);
+
+	function reportCreationFailure(reason: Error): void {
+		const handler = events.onerror;
+		if (handler) handler(new ErrorEvent(reason));
+		else console.error(reason);
+	}
 
 	// Creation depends on the container element alone. Every other prop is read
 	// untracked so that a zoom change never tears the WebGL context down.
@@ -103,17 +163,43 @@
 		if (!element) return;
 
 		return untrack(() => {
-			const instance = new MapLibreMap({
-				...options,
-				container: element,
-				style: mapStyle,
-				...(center !== undefined && { center }),
-				...(zoom !== undefined && { zoom }),
-				...(bearing !== undefined && { bearing }),
-				...(pitch !== undefined && { pitch }),
-				...(bounds !== undefined && { bounds })
-			});
+			status = 'loading';
+			error = null;
+			failure = null;
 
+			let instance: MapLibreMap;
+			try {
+				instance = new MapLibreMap({
+					...options,
+					container: element,
+					style: mapStyle,
+					...(center !== undefined && { center }),
+					...(zoom !== undefined && { zoom }),
+					...(bearing !== undefined && { bearing }),
+					...(pitch !== undefined && { pitch }),
+					...(bounds !== undefined && { bounds })
+				});
+			} catch (thrown) {
+				// From maplibre-gl 6.7 a missing WebGL context always ends here, as a
+				// GPUInitializationError, with the container cleaned up. Thrown out of
+				// this effect it would be uncaught, with no map to report it on.
+				const reason = thrown instanceof Error ? thrown : new Error(String(thrown));
+				failure = reason;
+				status = 'error';
+				error = reason;
+				reportCreationFailure(reason);
+				return;
+			}
+
+			const styles = trackStyle(instance, mapStyle, {
+				onchange: (nextStatus, nextError) => {
+					status = nextStatus;
+					error = nextError;
+				},
+				isOwnError: (candidate) => ownErrors.has(candidate as object),
+				transformStyle: options?.transformStyle
+			});
+			tracker = styles;
 			map = instance;
 
 			const subscriptions = [
@@ -121,17 +207,23 @@
 					registry.start(instance);
 					ready = true;
 					styleEpoch += 1;
+					styles.mapLoaded();
 				}),
 				// Fired only when a style is replaced wholesale, as opposed to diffed:
 				// the previous style and everything added to it are already gone.
-				instance.on('styledataloading', () => registry.styleLoading()),
+				instance.on('styledataloading', () => {
+					styles.styleLoading();
+					registry.styleLoading();
+				}),
 				// Fired once a replacement style is usable, whether MapLibre rebuilt it
-				// or diffed the old one into it, on every release from 6.0. MapLibre
+				// or diffed the old one into it, on every release from 6.7. MapLibre
 				// documents it as the moment to add sources and layers again.
 				instance.on('style.load', () => {
-					if (!registry.started) return;
-					registry.styleLoaded();
-					styleEpoch += 1;
+					if (registry.started) {
+						registry.styleLoaded();
+						styleEpoch += 1;
+					}
+					styles.styleLoaded();
 				}),
 				instance.on('sourcedata', () => registry.sourcesChanged())
 			];
@@ -152,32 +244,30 @@
 			return () => {
 				observer.disconnect();
 				for (const subscription of subscriptions) subscription.unsubscribe();
+				styles.destroy();
+				tracker = null;
 				registry.stop();
 				ready = false;
+				status = 'loading';
+				error = null;
 				map = null;
 				instance.remove();
 			};
 		});
 	});
 
-	// The registry puts back what a swap drops, on the `style.load` that follows.
-	let appliedStyle = $state<StyleSpecification | string | undefined>();
-
+	// Every change is passed on, from the moment the map exists: a style picked
+	// while the first one loads, or one assigned after it failed, must not be
+	// lost. The registry puts back what a swap drops, on the `style.load` that
+	// follows.
 	$effect(() => {
 		const instance = map;
 		const nextStyle = mapStyle;
-		if (!instance || !ready) return;
+		if (!instance) return;
 
-		if (untrack(() => appliedStyle) === undefined) {
-			appliedStyle = nextStyle;
-			return;
-		}
-		if (untrack(() => appliedStyle) === nextStyle) return;
-
-		appliedStyle = nextStyle;
 		// A diffed style fires `style.load` inside this call, and what reacts to
 		// it must not subscribe this effect to anything.
-		untrack(() => instance.setStyle(nextStyle));
+		untrack(() => tracker?.request(nextStyle));
 	});
 
 	// Map -> props. Guarded by value comparison rather than a mutex flag, which
@@ -274,7 +364,11 @@
 	class={['maplibrex-map', className]}
 	style={containerStyle}
 	data-maplibrex="map"
-></div>
+>
+	{#if failure && fallback}
+		{@render fallback({ error: failure })}
+	{/if}
+</div>
 
 {#if map}
 	{@render children?.({ map })}

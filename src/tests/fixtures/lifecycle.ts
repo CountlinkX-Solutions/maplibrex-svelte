@@ -11,6 +11,7 @@ import {
 // Imported here, not in a `.svelte.test.ts` file: those are compiled by the
 // Svelte compiler, which cannot parse import attributes on the 5.16 floor.
 import sveltePackage from 'svelte/package.json' with { type: 'json' };
+import type { MapState } from './StatusStack.svelte';
 
 /**
  * Helpers for browser tests of the source, layer and style lifecycle: swapping
@@ -141,6 +142,32 @@ export function createMapErrorLog() {
 }
 
 /**
+ * Collects what the `StatusStack` fixture reports. Pass `onstate` to it. The
+ * history holds one entry per Svelte update, so changes made within one
+ * update show up only as their outcome.
+ */
+export function createStateLog() {
+	const history: MapState[] = [];
+
+	return {
+		onstate(state: MapState) {
+			history.push(state);
+		},
+		history,
+		/** The latest state, or one with no map before the fixture reported. */
+		get current(): MapState {
+			return history.at(-1) ?? { status: 'loading', error: null, ready: false, map: null };
+		},
+		/** The map, once there is one. */
+		get map(): MapLibreMap {
+			const map = this.current.map;
+			if (!map) throw new Error('The fixture has not reported a map.');
+			return map;
+		}
+	};
+}
+
+/**
  * Collects errors that escape to the window, uncaught throws and unhandled
  * rejections, for the rest of the test. While a listener is registered Vitest
  * logs such errors instead of failing the run, so a test can assert on them.
@@ -172,6 +199,17 @@ export function captureUncaughtErrors() {
 		messages: () =>
 			errors.map((error) => (error instanceof Error ? `${error.name}: ${error.message}` : error))
 	};
+}
+
+/**
+ * Silences `console.error` until the test finishes, and records the first
+ * argument of each call as text.
+ */
+export function captureConsoleErrors() {
+	const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+	onTestFinished(() => spy.mockRestore());
+
+	return { messages: () => spy.mock.calls.map(([first]) => String(first)) };
 }
 
 /**
@@ -211,6 +249,20 @@ export function failingStyleUrl(message = 'style unavailable'): string {
 		throw new Error(message);
 	});
 	return `${scheme}://style.json`;
+}
+
+/** A style URL that serves `style` as soon as it is requested. */
+export function styleUrl(style: StyleSpecification): string {
+	const scheme = registerScheme(async () => ({ data: style }));
+	return `${scheme}://style.json`;
+}
+
+/** Tile URLs whose every request fails with `message`. */
+export function failingTileUrls(message = 'tile unavailable'): string[] {
+	const scheme = registerScheme(async () => {
+		throw new Error(message);
+	});
+	return [`${scheme}://{z}/{x}/{y}`];
 }
 
 /** A style URL whose request stays pending until the test calls `resolve`. */

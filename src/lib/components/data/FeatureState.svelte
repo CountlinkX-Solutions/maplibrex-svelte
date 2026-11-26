@@ -50,6 +50,7 @@
 		// `state` is removed by this cleanup and not set again by the next run.
 		const registration = registry.addDependent({
 			source: sourceId,
+			name: `<FeatureState id="${featureId}">`,
 			apply: (map) => {
 				map.setFeatureState(target, next);
 				keys = Object.keys(next);

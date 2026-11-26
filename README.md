@@ -63,7 +63,7 @@ Two other libraries cover the same ground. Both are mature, and both had release
 | ------------------------------------------------------------------------ | ------------------------------------- | ----------------- | ------------------------------------- |
 | [`svelte-maplibre`](https://www.npmjs.com/package/svelte-maplibre)       | bundled as a direct dependency (`^6`) | 5                 | d3-geo, dequal, just-compare, pmtiles |
 | [`svelte-maplibre-gl`](https://www.npmjs.com/package/svelte-maplibre-gl) | peer (`^5.19 \|\| ^6`)                | ≥5                | —                                     |
-| this one                                                                 | peer (`^6`)                           | ≥5.16, runes only | none                                  |
+| this one                                                                 | peer (`^6.10`)                        | ≥5.16, runes only | none                                  |
 
 **If you want something proven, use one of those two.** They have real users, real issues filed, and a track record this package does not have yet. This one is still at `0.1`, and the API has already moved once during its first week.
 
@@ -81,7 +81,7 @@ The template is dynamic, so no bundler can trace it. Vite never copies the worke
 
 ### With Vite (recommended)
 
-Add the plugin from `maplibrex-svelte/vite`. It serves the worker in dev and writes it into the build, under `maplibre/` below your app's base path, reading it from the installed `maplibre-gl` so it cannot drift from it. On `maplibre-gl` 6.0 to 6.12 it also copies `maplibre-gl-shared.mjs`, which those workers import by relative path. From 6.13 the worker is self-contained and the shared file is empty, so it copies the worker alone.
+Add the plugin from `maplibrex-svelte/vite`. It serves the worker in dev and writes it into the build, under `maplibre/` below your app's base path, reading it from the installed `maplibre-gl` so it cannot drift from it. On `maplibre-gl` 6.10 to 6.12 it also copies `maplibre-gl-shared.mjs`, which those workers import by relative path. From 6.13 the worker is self-contained and the shared file is empty, so it copies the worker alone.
 
 ```ts
 // vite.config.ts
@@ -120,7 +120,7 @@ The plugin hands the worker's URL to your app through a virtual module. Pass it 
 
 ### Without the plugin
 
-Without Vite, or to do it by hand, copy `maplibre-gl-worker.mjs` from `node_modules/maplibre-gl/dist` into a directory your app serves, and copy it again whenever you upgrade `maplibre-gl`. On 6.0 to 6.12, also copy `maplibre-gl-shared.mjs` **into the same directory**: those workers import it by relative path. Then point MapLibre at the copy before the first map is constructed, with your base path in front if the app is not served from the root:
+Without Vite, or to do it by hand, copy `maplibre-gl-worker.mjs` from `node_modules/maplibre-gl/dist` into a directory your app serves, and copy it again whenever you upgrade `maplibre-gl`. On 6.10 to 6.12, also copy `maplibre-gl-shared.mjs` **into the same directory**: those workers import it by relative path. Then point MapLibre at the copy before the first map is constructed, with your base path in front if the app is not served from the root:
 
 ```ts
 import { setWorkerUrl } from 'maplibre-gl';
@@ -128,7 +128,7 @@ import { setWorkerUrl } from 'maplibre-gl';
 setWorkerUrl('/maplibre/maplibre-gl-worker.mjs');
 ```
 
-Two things that look like fixes but are not: on 6.0 to 6.12, emitting only the worker with a Vite `?url` import leaves its shared chunk missing, and a bare side-effect import of your setup module is legal to tree-shake under a narrow `sideEffects` list. Call `setWorkerUrl` from code that runs, such as the root layout.
+Two things that look like fixes but are not: on 6.10 to 6.12, emitting only the worker with a Vite `?url` import leaves its shared chunk missing, and a bare side-effect import of your setup module is legal to tree-shake under a narrow `sideEffects` list. Call `setWorkerUrl` from code that runs, such as the root layout.
 
 ## Content-Security-Policy
 
@@ -156,7 +156,7 @@ Three things to check in your own app:
 |                |                                              |
 | -------------- | -------------------------------------------- |
 | Svelte         | 5.16 or later (runes)                        |
-| MapLibre GL JS | 6                                            |
+| MapLibre GL JS | 6.10 or later                                |
 | TypeScript     | optional, but every component is fully typed |
 | Vite           | 5 to 8, only for `maplibrex-svelte/vite`     |
 
@@ -164,7 +164,7 @@ Three things to check in your own app:
 
 Four decisions shape the whole API.
 
-**The component tree is the style tree.** A `<Layer>` nested inside a source component inherits its source id; one elsewhere names it with `source`, and both behave the same. The library adds a layer once its source is in the style, whenever either mounts, and takes it out before its source goes. Layers are drawn in the order they appear in the markup, including layers that mount later inside `{#if}` or `{#each}`, whatever order Svelte mounts them in. `beforeId` overrides the markup for one layer: it goes below the layer it names. If that layer is not in the style, the mistake is reported through `onerror` once and the layer is added on top, then moved below its target if a layer component adds it later.
+**The component tree is the style tree.** A `<Layer>` nested inside a source component inherits its source id; one elsewhere names it with `source`, and both behave the same. The library adds a layer once its source is in the style, whenever either mounts, and takes it out before its source goes. Layers are drawn in the order they appear in the markup, including layers that mount later inside `{#if}` or `{#each}`, whatever order Svelte mounts them in. `beforeId` overrides the markup for one layer: it goes below the layer it names. If that layer is not in the style, the mistake is reported through `onerror` once and the layer is added on top, then moved below its target if a layer component adds it later. Likewise, a layer, terrain or feature state still waiting, once the style has loaded, for a source that no component provides and the style does not have is reported once, and is added if that source appears later.
 
 **Updates are surgical, never destructive.** Changing one paint property calls `setPaintProperty` for that key alone; recreating the layer would drop its tiles and restart every transition. Changing GeoJSON data calls `setData`; recreating the source would take every dependent layer down with it. Recreation happens only where MapLibre exposes no setter — and where that is the case, it is documented on the prop.
 
@@ -176,9 +176,9 @@ Four decisions shape the whole API.
 
 ### Root
 
-| Component    | Notes                                                                                                                     |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| `<MapLibre>` | Creates the map and provides context. `bind:map`, `bind:ready`, `bind:center`, `bind:zoom`, `bind:bearing`, `bind:pitch`. |
+| Component    | Notes                                                                                                                                                  |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `<MapLibre>` | Creates the map and provides context. `bind:map`, `bind:status`, `bind:error`, `bind:ready`, `bind:center`, `bind:zoom`, `bind:bearing`, `bind:pitch`. |
 
 Changing `mapStyle` swaps the style in place rather than recreating the map. A swap drops everything added to the previous style, so once the new style is usable the library puts back every source, layer, terrain and feature state in the tree, the layers in markup order above the new style's own, and the other style components apply themselves again.
 
@@ -190,7 +190,39 @@ Changing `mapStyle` swaps the style in place rather than recreating the map. A s
 
 `options` passes any other `MapOptions` to the MapLibre `Map` constructor. It is read once, when the map is created, and later changes to it have no effect. Use `bind:map` for anything you need to change at runtime.
 
-Errors MapLibre reports while the map runs, such as a style, tile, sprite or glyph request that fails or a style that does not validate, reach `onerror` with the `Error` in `event.error`. Without a handler, MapLibre writes them to the console.
+#### Status and errors
+
+`bind:status` says whether the map shows the current `mapStyle`: `'loading'` until the first style is shown and again while a new `mapStyle` loads, `'ready'` once it is shown, and `'error'` when the map could not be created or the current `mapStyle` failed to load. `bind:error` holds the `Error` behind an `'error'` status, and `null` otherwise. `bind:ready` keeps its earlier meaning: it turns `true` at the map's first `load` event, in the same update in which `status` first becomes `'ready'`, and stays `true` while a later style loads or after one fails.
+
+A style URL that cannot be fetched, or a style that does not validate, sets `status` to `'error'`. A tile, sprite, glyph or image that fails does not. Assigning another `mapStyle` loads it as usual, including when the first style failed or has not finished loading.
+
+When the browser cannot provide a WebGL2 context, MapLibre cannot create the map. Nothing is thrown: `status` becomes `'error'`, `error` holds MapLibre's `GPUInitializationError`, and the `fallback` snippet, if you pass one, is rendered inside the map container. Without `fallback` the container stays empty.
+
+```svelte
+<script lang="ts">
+	import { MapLibre, type MapLibreMap, type MapStatus } from 'maplibrex-svelte';
+
+	let mapStyle = $state('https://example.com/style.json');
+	let status = $state<MapStatus>('loading');
+	let error = $state<Error | null>(null);
+	let map = $state<MapLibreMap | null>(null);
+</script>
+
+<MapLibre {mapStyle} bind:status bind:error bind:map>
+	{#snippet fallback()}
+		<p>This map needs WebGL2, which this browser does not provide.</p>
+	{/snippet}
+</MapLibre>
+
+{#if status === 'error' && map}
+	<p role="alert">The map style could not be loaded: {error?.message}</p>
+	<button onclick={() => (mapStyle = 'https://example.com/simple-style.json')}
+		>Use the simple style</button
+	>
+{/if}
+```
+
+`onerror` receives the errors MapLibre reports while the map runs, such as a style, tile, sprite or glyph request that fails or a style that does not validate, with the `Error` in `event.error`, and the problems the library finds in the tree, described under [Design](#design). It is also called once when the map cannot be created, with an event the library builds: it has no `target`, since there is no map. Without a handler, all of these are written to the console.
 
 ```svelte
 <MapLibre mapStyle={style} onerror={(event) => reportMapError(event.error)} />

@@ -183,7 +183,8 @@ export const COMPONENTS: ComponentDoc[] = [
 				name: 'mapStyle',
 				type: 'StyleSpecification | string',
 				required: true,
-				description: 'A style URL or an inline specification. Changing it swaps the style in place.'
+				description:
+					'A style URL or an inline specification. Changing it swaps the style in place, also before the first style has loaded and after one failed.'
 			},
 			{ name: 'center', type: 'LngLatLike', description: 'Camera centre. Two-way.' },
 			{ name: 'zoom', type: 'number', description: 'Camera zoom. Two-way.' },
@@ -223,18 +224,42 @@ export const COMPONENTS: ComponentDoc[] = [
 				description: 'Inline style for the container. Give it a height.'
 			},
 			{
+				name: 'status',
+				type: "'loading' | 'ready' | 'error'",
+				description:
+					"Read-only binding. 'loading' until the first style is shown and while a new mapStyle loads, 'ready' once the map shows the current mapStyle, 'error' when the map could not be created or that style failed to load."
+			},
+			{
+				name: 'error',
+				type: 'Error | null',
+				description: "Read-only binding: the error behind an 'error' status, otherwise null."
+			},
+			{
+				name: 'ready',
+				type: 'boolean',
+				description:
+					"Read-only binding: true from the map's first load event, the update in which status first becomes 'ready', until the map is removed. It stays true while a new style loads or after one fails."
+			},
+			{
+				name: 'fallback',
+				type: 'Snippet<[{ error: Error }]>',
+				description:
+					'Rendered in the map container when the map could not be created, which from maplibre-gl 6.7 means no WebGL2. Not rendered when a style fails.'
+			},
+			{
 				name: 'on<event>',
 				type: '(event) => void',
 				description: 'Any map event: onload, onmoveend, onclick, onerror, onstyleimagemissing.'
 			}
 		],
-		bindings: ['map', 'ready', 'center', 'zoom', 'bearing', 'pitch'],
+		bindings: ['map', 'ready', 'status', 'error', 'center', 'zoom', 'bearing', 'pitch'],
 		notes: [
 			'A map with no height renders nothing. The container fills its parent by default, so give the parent a height or pass one through style.',
 			'Changing mapStyle swaps the style rather than recreating the map. Once the replacement is usable, the library puts back every source, layer, terrain and feature state in the tree, the layers in markup order, and the other style components apply themselves again.',
 			'Two-way camera binding terminates by comparison, not a mutex: an update that matches where the map already is does nothing.',
 			'onmoveend, onmove and the other camera events fire for moves made from code too, and some arrive during setup, before anyone touches the map: MapLibre jumps to the style camera when the style loads if you gave no center, zoom or bounds, and moves when the container changes size. This component also moves the map when padding changes and when center, zoom, bearing or pitch disagree with it. To react only to the person, check event.originalEvent: gestures carry the DOM event that started them, moves from code carry none.',
-			'onerror receives errors MapLibre reports while the map runs, such as a failed style, tile, sprite or glyph request, with the Error in event.error. Without a handler, MapLibre logs them to the console.',
+			'onerror receives errors MapLibre reports while the map runs, such as a failed style, tile, sprite or glyph request, with the Error in event.error, and what the library finds wrong in the tree: a beforeId naming no layer, or a layer, terrain or feature state waiting for a source that no component provides once the style has loaded. It is also called once when the map cannot be created, with an event that has no target. Without a handler, these errors are written to the console.',
+			"status tells a style that is still loading from one that failed: a style URL that cannot be fetched or a style that does not validate sets it to 'error', with the reason in error. Assigning another mapStyle, for example a fallback from onerror, loads it as usual. Tile, sprite and glyph failures do not change status.",
 			'Set up the MapLibre worker before the first map is created. With Vite, add maplibreWorker() from maplibrex-svelte/vite to the Vite config and pass the workerUrl it provides through virtual:maplibrex-svelte/worker to setWorkerUrl; the home page shows the setup, and the steps without Vite. Without the worker the map and its controls appear in a production build, but every source renders as empty background.'
 		],
 		examples: [
@@ -243,7 +268,7 @@ export const COMPONENTS: ComponentDoc[] = [
 			'Toggle interactions',
 			'Restrict map panning to an area'
 		],
-		demo: 'basic-map'
+		demo: 'map-status'
 	},
 
 	// Controls -------------------------------------------------------------

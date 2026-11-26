@@ -19,6 +19,11 @@ import { untrack } from 'svelte';
  * - every entry again after the style is replaced, since MapLibre drops what
  *   was added to the previous one.
  *
+ * A dependent still waiting, once the update that made the style usable or
+ * mounted the dependent is over, for a source that no component registered
+ * and the style does not hold, and not applied since the style loaded, is
+ * reported once. It keeps waiting.
+ *
  * Layers carry an anchor, a node the component renders where it sits in the
  * markup. Document order of the anchors is the draw order the registry keeps,
  * whenever each layer happened to mount.
@@ -56,6 +61,8 @@ export interface DependentEntry<M, A> {
 	readonly source: string | undefined;
 	/** Present for layers. */
 	readonly layer?: LayerPlacement<A>;
+	/** How reports name an entry that is not a layer, such as `<Terrain>`. */
+	readonly name?: string;
 	/**
 	 * Puts the entry in the style. `beforeId` is where a layer goes. Returning
 	 * `false` means the map refused it, which MapLibre reports on its own.
@@ -98,10 +105,18 @@ export interface StyleRegistry<M extends RegistryMap = MapLibreMap, A = Node> {
 }
 
 export interface RegistryOptions<A> {
-	/** Where errors go: a missing `beforeId`, or an entry that threw. */
+	/**
+	 * Where errors go: a missing `beforeId`, a source nothing provides, or an
+	 * entry that threw.
+	 */
 	report(error: Error): void;
 	/** Document order of two anchors, as a sort comparator. */
 	compare?(a: A, b: A): number;
+	/**
+	 * Runs `check` once the update in progress is over, so that whatever mounts
+	 * in it has registered by then. Defaults to a microtask.
+	 */
+	defer?(check: () => void): void;
 }
 
 type SourceRecord<M> = { entry: SourceEntry<M>; applied: boolean };
@@ -114,6 +129,13 @@ type DependentRecord<M, A> = {
 	beforeId: string | undefined;
 	/** The missing `beforeId` already reported, so a re-apply does not repeat it. */
 	reported: string | undefined;
+	/**
+	 * Applied at some point since the style last loaded. Its source was there
+	 * then, so its absence now is the app's doing rather than a mistake.
+	 */
+	seen: boolean;
+	/** The source already reported as provided by nothing. */
+	missing: string | undefined;
 };
 
 type LayerRecord<M, A> = DependentRecord<M, A> & { entry: { layer: LayerPlacement<A> } };
@@ -135,9 +157,11 @@ export function createStyleRegistry<M extends RegistryMap = MapLibreMap, A = Nod
 	options: RegistryOptions<A>
 ): StyleRegistry<M, A> {
 	const compare = options.compare ?? (documentOrder as unknown as (a: A, b: A) => number);
+	const defer = options.defer ?? queueMicrotask;
 
 	let map: M | null = null;
 	let usable = false;
+	let checkPending = false;
 	const sources: SourceRecord<M>[] = [];
 	const dependents: DependentRecord<M, A>[] = [];
 
@@ -266,6 +290,7 @@ export function createStyleRegistry<M extends RegistryMap = MapLibreMap, A = Nod
 		const result = run(() => record.entry.apply(current, beforeId), false);
 
 		record.applied = result !== false;
+		if (record.applied) record.seen = true;
 		record.failed = !record.applied;
 		if (record.applied && isLayer(record)) followTarget(record.entry.layer.id);
 	}
@@ -281,6 +306,7 @@ export function createStyleRegistry<M extends RegistryMap = MapLibreMap, A = Nod
 
 	function resetDependent(record: DependentRecord<M, A>): void {
 		record.failed = false;
+		record.seen = false;
 		if (!record.applied) return;
 		record.applied = false;
 		run(() => record.entry.reset?.(), undefined);
@@ -335,6 +361,47 @@ export function createStyleRegistry<M extends RegistryMap = MapLibreMap, A = Nod
 		}
 	}
 
+	function nameOf(record: DependentRecord<M, A>): string {
+		if (isLayer(record)) return `Layer "${record.entry.layer.id}"`;
+		return record.entry.name ?? 'An entry';
+	}
+
+	/**
+	 * A source that arrives later is indistinguishable from one that never
+	 * will, so the check waits only for the update in progress: a source
+	 * component mounting in it, or a source the app adds by hand on `load`,
+	 * has arrived by then. Not reported: a dependent applied since the style
+	 * loaded, whose source the app has since taken away, and a source a
+	 * component registered and MapLibre refused, which MapLibre explained.
+	 */
+	function reportMissing(): void {
+		if (!map || !usable) return;
+		const current = map;
+
+		for (const record of dependents) {
+			const id = record.entry.source;
+			if (record.applied || record.seen || id === undefined || record.missing === id) continue;
+			if (isRegisteredSource(id) || current.getSource(id) !== undefined) continue;
+
+			record.missing = id;
+			options.report(
+				new Error(
+					`[maplibrex] ${nameOf(record)} is waiting for source "${id}", which no source ` +
+						`component provides and the style does not have. It is applied once that source is added.`
+				)
+			);
+		}
+	}
+
+	function scheduleMissingCheck(): void {
+		if (checkPending) return;
+		checkPending = true;
+		defer(() => {
+			checkPending = false;
+			reportMissing();
+		});
+	}
+
 	return {
 		get started() {
 			return map !== null;
@@ -369,10 +436,13 @@ export function createStyleRegistry<M extends RegistryMap = MapLibreMap, A = Nod
 				applied: false,
 				failed: false,
 				beforeId: entry.layer?.beforeId,
-				reported: undefined
+				reported: undefined,
+				seen: false,
+				missing: undefined
 			};
 			dependents.push(record);
 			applyDependent(record);
+			if (!record.applied && usable) scheduleMissingCheck();
 
 			return {
 				setBeforeId(beforeId) {
@@ -403,6 +473,7 @@ export function createStyleRegistry<M extends RegistryMap = MapLibreMap, A = Nod
 			map = next;
 			usable = true;
 			applyAll();
+			scheduleMissingCheck();
 		},
 
 		stop() {
@@ -435,6 +506,7 @@ export function createStyleRegistry<M extends RegistryMap = MapLibreMap, A = Nod
 				resetDependent(record);
 			}
 			applyAll();
+			scheduleMissingCheck();
 		},
 
 		sourcesChanged() {

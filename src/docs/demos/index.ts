@@ -22,6 +22,7 @@ import LayerTypeDemo from './LayerTypeDemo.svelte';
 import LightDemo from './LightDemo.svelte';
 import LineLayerDemo from './LineLayerDemo.svelte';
 import LogoControlDemo from './LogoControlDemo.svelte';
+import MapStatusDemo from './MapStatusDemo.svelte';
 import NavigationControlDemo from './NavigationControlDemo.svelte';
 import LayerStyleDemo from './LayerStyleDemo.svelte';
 import MarkerPopupDemo from './MarkerPopupDemo.svelte';
@@ -42,6 +43,7 @@ import VideoSourceDemo from './VideoSourceDemo.svelte';
  */
 export const DEMOS: Record<string, Component> = {
 	'basic-map': BasicMap,
+	'map-status': MapStatusDemo,
 	controls: ControlsDemo,
 	geojson: GeoJsonDemo,
 	hover: HoverDemo,
