@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.3.0
+
+Sources, layers and style-level state now follow the component tree reliably, and the map reports its status and its failures.
+
+### Requirements
+
+- `maplibre-gl` 6.10 or later (was 6.0). From 6.7 a missing WebGL context is always a thrown error, and 6.9 and 6.10 fix two MapLibre defects that broke terrain across a style change.
+
+### Added
+
+- `<MapLibre>` has a `status` binding (`'loading'`, `'ready'` or `'error'`), an `error` binding with the error behind an `'error'` status, and a `fallback` snippet rendered in place of the map when it cannot be created. The `MapStatus` type is exported (#2, #3).
+
+### Fixed
+
+- Layers are drawn in the order they are written, however and whenever they mount: late, inside `{#if}`, or inside a keyed or unkeyed `{#each}` (#1).
+- Changing `mapStyle` brings back nested layers, terrain and feature state, in order (#13).
+- A layer attached with `source="id"`, and `<Terrain>` and `<FeatureState>`, wait for their source, survive the source being recreated, and are removed before it. Unmounting a source and its layer together no longer leaves the source behind (#14).
+- A `beforeId` naming a layer that does not exist no longer loses the layer. It is drawn on top, reported once through `onerror`, and moves below the target if a layer component adds it later. Mounting a layer never calls `moveLayer` (#8).
+- A `mapStyle` change made before the first load, or after a style failed to load, reaches the map (#15).
+- A browser without WebGL no longer produces an uncaught error. `onerror` is called once, or the error is written to the console when there is no handler (#2).
+- `<Light>`, `<Sky>`, `<Projection>` and `<GlobalState>` wait for a usable style instead of throwing while one is loading, and on unmount they restore the current style's value, not the previous style's. `<GlobalState>` now restores at all (#22, #59).
+- Each camera prop keeps its own target until the map gets there. Setting `zoom` and then `center` during an animation no longer stops at an intermediate zoom (#18).
+- Props that were read once now react, including being unset: `sourceLayer`, `metadata`, `minzoom` and `maxzoom` on layers; `padding` on the map; the optional settings of `<Marker>` and `<Popup>`; the metadata of `<Image>` (#20).
+- A popup that is rebuilt because a constructor-only prop changed no longer calls `onclose`, and `className` changes without a rebuild (#43).
+
+### Changed
+
+- Sources update through MapLibre's setters where one covers the change (`tiles`, `url`, image and video `coordinates`, image `url`, cluster options), so their layers stay in the style. Other changes still recreate the source (#21).
+- Changing `exaggeration` on `<Terrain>` is one `setTerrain` call (#22).
+- A layer, terrain or feature state waiting for a source that no component provides is reported once through `onerror` and keeps waiting. A source that mounts in a later update than a layer naming it produces one such report (#55).
+- Errors while adding a source or a layer reach `onerror` instead of being thrown out of an effect.
+- Setting `minzoom` alone on a layer no longer also sets `maxzoom: 24`.
+- Removing or recreating a source also removes layers added by hand that use it.
+- Each layer component renders an empty `<div hidden data-maplibrex="layer">` beside the map container, which is how the library reads markup order. Server rendering emits none.
+- `Source`, `Layer`, `CustomLayer`, `Terrain`, `FeatureState`, `Light`, `Sky`, `Projection` and `GlobalState` must be rendered inside `<MapLibre>`. A context built by hand with `setMapContext` is no longer enough for them.
+
 ## 0.2.0
 
 Toolchain and packaging. No component changed: everything that was in the 0.1.1 package is byte-identical in this one.
