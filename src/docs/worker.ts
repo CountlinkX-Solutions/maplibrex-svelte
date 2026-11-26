@@ -1,15 +1,14 @@
-import { getVersion, setWorkerUrl } from 'maplibre-gl';
-import { asset } from '$app/paths';
-import type { AssetPath } from '$app/types';
-import { MAPLIBRE_WORKER_PATH } from '../../vite-plugins/maplibre-worker-paths.js';
+import { setWorkerUrl } from 'maplibre-gl';
+import { workerUrl } from 'virtual:maplibrex-svelte/worker';
 
 let configured = false;
 
 /**
- * Points MapLibre at the worker copied by the `maplibrex:maplibre-worker`
- * Vite plugin, which explains the whole problem. Without this the map still
- * loads and the canvas still appears, but nothing is parsed, so every source
- * renders as empty background.
+ * Points MapLibre at the worker that `maplibreWorker()` from
+ * `maplibrex-svelte/vite` serves in dev and writes into the build: the setup
+ * the home page recommends, used here exactly as an app would. Without it the
+ * map still loads and the canvas still appears, but nothing is parsed, so
+ * every source renders as empty background.
  *
  * Exported as a function rather than a side-effect import on purpose: this
  * package declares a narrow `sideEffects` list, so a module imported only for
@@ -20,12 +19,6 @@ let configured = false;
 export function configureMapLibreWorker(): void {
 	if (configured) return;
 
-	// `asset()` adds the base path. Its type lists only files in `static/`, and
-	// the worker is emitted by the plugin instead, hence the cast. The copy keeps
-	// the same name in every release, so the version query stops a browser from
-	// pairing a cached older worker with a newer main bundle, as MapLibre's own
-	// setup guide recommends for copied workers.
-	const url = asset(MAPLIBRE_WORKER_PATH.slice(1) as AssetPath);
-	setWorkerUrl(`${url}?v=${getVersion()}`);
+	setWorkerUrl(workerUrl);
 	configured = true;
 }

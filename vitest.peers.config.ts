@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
+import { maplibreWorker } from './src/lib/vite/index.js';
 
 /**
  * Runs the suite on whatever `svelte` and `maplibre-gl` the `peers` job in CI
@@ -17,6 +18,9 @@ export default defineConfig({
 		exclude: ['maplibre-gl']
 	},
 	plugins: [
+		// Serves the worker the browser tests load, and on the floor release
+		// the shared chunk next to it.
+		maplibreWorker(),
 		svelte({
 			// Same rule as the main config. Older Svelte releases do not accept a
 			// function for `runes`, so it is applied per file here.
@@ -37,7 +41,8 @@ export default defineConfig({
 						instances: [{ browser: 'chromium', headless: true }]
 					},
 					include: ['src/**/*.svelte.{test,spec}.{js,ts}'],
-					exclude: ['src/lib/server/**']
+					exclude: ['src/lib/server/**'],
+					setupFiles: ['src/tests/setup.ts']
 				}
 			},
 

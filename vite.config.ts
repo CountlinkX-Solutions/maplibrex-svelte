@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
-import { maplibreWorker } from './vite-plugins/maplibre-worker.js';
+import { maplibreWorker } from './src/lib/vite/index.js';
 
 /**
  * SvelteKit needs a leading slash and no trailing one. Validating here turns a
@@ -58,7 +58,8 @@ export default defineConfig({
 						instances: [{ browser: 'chromium', headless: true }]
 					},
 					include: ['src/**/*.svelte.{test,spec}.{js,ts}'],
-					exclude: ['src/lib/server/**']
+					exclude: ['src/lib/server/**'],
+					setupFiles: ['src/tests/setup.ts']
 				}
 			},
 
