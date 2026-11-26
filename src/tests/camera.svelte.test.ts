@@ -128,7 +128,11 @@ describe('camera targets (#18)', () => {
 		await atRest(map);
 
 		expect(camera.values.zoom).toBeCloseTo(6, 6);
-		expect(camera.values.center).toEqual([map.getCenter().lng, map.getCenter().lat]);
+		// The write-back skips differences below CAMERA_EPSILON (1e-6), so the
+		// bound value may trail the map's final frame by float noise.
+		const [lng, lat] = camera.values.center as [number, number];
+		expect(lng).toBeCloseTo(map.getCenter().lng, 5);
+		expect(lat).toBeCloseTo(map.getCenter().lat, 5);
 	});
 
 	it('applies both changes in jump mode', async () => {
