@@ -37,7 +37,8 @@
 	});
 </script>
 
-<div style="display: none" aria-hidden="true">
+<!-- `hidden`, not an inline style: a strict CSP blocks style attributes. -->
+<div hidden aria-hidden="true">
 	<div bind:this={content} class={['maplibregl-ctrl', className]}>
 		{#if context.map}
 			{@render children({ map: context.map })}
