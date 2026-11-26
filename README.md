@@ -188,7 +188,7 @@ Changing `mapStyle` swaps the style in place rather than recreating the map. A s
 <MapLibre mapStyle={style} interactions={{ scrollZoom: false, dragRotate: allowRotation }} />
 ```
 
-`options` passes any other `MapOptions` to the MapLibre `Map` constructor. It is read once, when the map is created, and later changes to it have no effect. Use `bind:map` for anything you need to change at runtime.
+`options` passes any other `MapOptions` to the MapLibre `Map` constructor. It is read once, when the map is created, and later changes to it have no effect, also for the options MapLibre can change at runtime, such as `minZoom`, `maxZoom` and `maxBounds`. Use `bind:map` for anything you need to change at runtime, with `map.setMinZoom`, `map.setMaxZoom`, `map.setMaxBounds` and the like.
 
 #### Status and errors
 

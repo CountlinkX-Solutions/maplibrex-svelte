@@ -176,31 +176,34 @@
 		};
 	});
 
+	// An unset prop goes back to MapLibre's default. `offset` and `padding`
+	// have none, and their setters take `undefined`; `maxWidth` must be given
+	// its default, as the setter leaves the width alone without a value.
 	$effect(() => {
 		const instance = popup;
-		const next = maxWidth;
-		if (!instance || next === undefined) return;
+		const next = maxWidth ?? '240px';
+		if (!instance) return;
 		untrack(() => instance.setMaxWidth(next));
 	});
 
 	$effect(() => {
 		const instance = popup;
 		const next = offset;
-		if (!instance || next === undefined) return;
+		if (!instance) return;
 		untrack(() => instance.setOffset(next));
 	});
 
 	$effect(() => {
 		const instance = popup;
 		const next = padding;
-		if (!instance || next === undefined) return;
+		if (!instance) return;
 		untrack(() => instance.setPadding(next));
 	});
 
 	$effect(() => {
 		const instance = popup;
-		const next = subpixelPositioning;
-		if (!instance || next === undefined) return;
+		const next = subpixelPositioning ?? false;
+		if (!instance) return;
 		untrack(() => instance.setSubpixelPositioning(next));
 	});
 

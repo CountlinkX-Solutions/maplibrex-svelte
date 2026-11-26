@@ -132,54 +132,68 @@
 		};
 	});
 
-	// Everything MapLibre exposes a setter for is updated in place.
+	// Everything MapLibre exposes a setter for is updated in place. An unset
+	// prop goes back to the value MapLibre uses when the option is not given,
+	// since none of these setters has a way to reset.
 	$effect(() => {
 		const instance = marker;
-		const next = offset;
-		if (!instance || next === undefined) return;
+		// MapLibre's default offset lifts its own pin so that the tip marks the
+		// position; a custom element has none.
+		const next = offset ?? (usesCustomElement ? [0, 0] : [0, -14]);
+		if (!instance) return;
 		untrack(() => instance.setOffset(next));
 	});
 
 	$effect(() => {
 		const instance = marker;
-		const next = draggable;
-		if (!instance || next === undefined) return;
+		const next = draggable ?? false;
+		if (!instance) return;
 		untrack(() => instance.setDraggable(next));
 	});
 
 	$effect(() => {
 		const instance = marker;
-		const next = rotation;
-		if (!instance || next === undefined) return;
+		const next = rotation ?? 0;
+		if (!instance) return;
 		if (sameNumber(instance.getRotation(), next)) return;
 		untrack(() => instance.setRotation(next));
 	});
 
 	$effect(() => {
 		const instance = marker;
-		const next = rotationAlignment;
-		if (!instance || next === undefined) return;
+		const next = rotationAlignment ?? 'auto';
+		if (!instance) return;
 		untrack(() => instance.setRotationAlignment(next));
 	});
 
+	// Unset, the pitch alignment follows the rotation alignment, as MapLibre
+	// does for a marker created without one.
 	$effect(() => {
 		const instance = marker;
-		const next = pitchAlignment;
-		if (!instance || next === undefined) return;
+		const next = pitchAlignment ?? 'auto';
+		void rotationAlignment;
+		if (!instance) return;
 		untrack(() => instance.setPitchAlignment(next));
 	});
 
 	$effect(() => {
 		const instance = marker;
 		const next = { opacity, opacityWhenCovered };
-		if (!instance || (next.opacity === undefined && next.opacityWhenCovered === undefined)) return;
-		untrack(() => instance.setOpacity(next.opacity, next.opacityWhenCovered));
+		if (!instance) return;
+		untrack(() => {
+			// The setter keeps a value it is not given, and called with neither
+			// it puts both defaults back, so it is called that way first.
+			instance.setOpacity();
+			if (next.opacity !== undefined || next.opacityWhenCovered !== undefined) {
+				instance.setOpacity(next.opacity, next.opacityWhenCovered);
+			}
+		});
 	});
 
 	$effect(() => {
 		const instance = marker;
-		const next = subpixelPositioning;
-		if (!instance || next === undefined) return;
+		const next = subpixelPositioning ?? false;
+		if (!instance) return;
 		untrack(() => instance.setSubpixelPositioning(next));
 	});
 

@@ -45,7 +45,10 @@
 		pitch?: number;
 		/** Applied once on creation; use `map.fitBounds` afterwards. */
 		bounds?: LngLatBoundsLike;
-		/** Insets the viewport, which moves the vanishing point off centre. */
+		/**
+		 * Insets the viewport, which moves the vanishing point off centre.
+		 * Unsetting it goes back to no padding.
+		 */
 		padding?: PaddingOptions;
 		/** Enables or disables gesture handlers at runtime. Omitted keys are left alone. */
 		interactions?: InteractionRequest;
@@ -58,7 +61,14 @@
 		cameraMode?: CameraMode;
 		/**
 		 * Escape hatch for any `MapOptions` this component does not surface.
-		 * Read once, when the map is created: later changes have no effect.
+		 * Read once, when the map is created: later changes have no effect,
+		 * also for the options MapLibre can change at runtime, such as
+		 * `minZoom`, `maxZoom`, `minPitch`, `maxPitch`, `maxBounds` and
+		 * `renderWorldCopies`. Change those on the map from `bind:map`, with
+		 * `setMinZoom`, `setMaxZoom`, `setMinPitch`, `setMaxPitch`,
+		 * `setMaxBounds` and `setRenderWorldCopies`. The props of this
+		 * component are what follows changes: `mapStyle`, the camera props,
+		 * `padding`, `interactions` and `cameraMode`; `bounds` is read once too.
 		 */
 		options?: Partial<Omit<MapOptions, 'container' | 'style'>>;
 		/**
@@ -392,12 +402,23 @@
 		});
 	});
 
+	/** This component has set the map's padding, which unsetting the prop takes back. */
+	let padded = false;
+
 	$effect(() => {
 		const instance = map;
 		const next = padding;
-		if (!instance || next === undefined) return;
+		if (!instance) return;
 
-		untrack(() => instance.setPadding(next));
+		untrack(() => {
+			if (next !== undefined) {
+				padded = true;
+				instance.setPadding(next);
+			} else if (padded) {
+				padded = false;
+				instance.setPadding({ top: 0, bottom: 0, left: 0, right: 0 });
+			}
+		});
 	});
 
 	// Gesture handlers are imperative objects rather than style state, so they

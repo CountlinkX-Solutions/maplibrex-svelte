@@ -21,12 +21,17 @@
 		type: LayerSpecification['type'];
 		/** Defaults to the id of the enclosing source component. */
 		source?: string;
-		/** Required for vector tile sources with more than one layer. */
+		/**
+		 * Required for vector tile sources with more than one layer. MapLibre has
+		 * no setter for it, so a change adds the layer anew, in the same place.
+		 */
 		sourceLayer?: string;
 		filter?: FilterSpecification;
 		layout?: StyleRecord;
 		paint?: StyleRecord;
+		/** Changed in place; unsetting it adds the layer anew, in the same place. */
 		minzoom?: number;
+		/** Changed in place; unsetting it adds the layer anew, in the same place. */
 		maxzoom?: number;
 		/** Sugar over `layout.visibility`. @defaultValue true */
 		visible?: boolean;
@@ -35,6 +40,10 @@
 		 * the layer's place in the markup decides its place in the style.
 		 */
 		beforeId?: string;
+		/**
+		 * Compared by value. MapLibre has no setter for it, so a change adds the
+		 * layer anew, in the same place.
+		 */
 		metadata?: unknown;
 		children?: Snippet<[{ id: string }]>;
 	};
@@ -78,6 +87,15 @@
 	let appliedLayout = $state<StyleRecord | undefined>();
 	let appliedFilter = $state<FilterSpecification | undefined>();
 	let registration: DependentRegistration | undefined;
+	/** Bumped to add the layer anew, for what MapLibre sets only on adding a layer. */
+	let revision = $state(0);
+	/** What the layer was added with, of the options read only then. */
+	let addedWith: {
+		sourceLayer: string | undefined;
+		metadata: unknown;
+		minzoom: number | undefined;
+		maxzoom: number | undefined;
+	} = { sourceLayer: undefined, metadata: undefined, minzoom: undefined, maxzoom: undefined };
 
 	function forget() {
 		inStyle = false;
@@ -95,6 +113,7 @@
 		const layerId = id;
 		const layerType = type;
 		const sourceId = resolvedSource;
+		void revision;
 
 		if (!element) return;
 
@@ -129,6 +148,7 @@
 				appliedPaint = paint;
 				appliedLayout = resolvedLayout;
 				appliedFilter = filter;
+				addedWith = { sourceLayer, metadata, minzoom, maxzoom };
 				inStyle = true;
 				added = true;
 			},
@@ -208,13 +228,34 @@
 		});
 	});
 
+	// MapLibre has no setter for `source-layer` or `metadata`, and its zoom
+	// range setter leaves a bound it is not given as it was, so those changes,
+	// and unsetting a bound, add the layer anew; the registry puts it back in
+	// the same place. A new bound goes through `setLayerZoomRange`.
 	$effect(() => {
 		const map = context.map;
-		const range = { minzoom, maxzoom };
+		const next = { sourceLayer, metadata, minzoom, maxzoom };
 		if (!map || !inStyle) return;
-		if (range.minzoom === undefined && range.maxzoom === undefined) return;
 
-		untrack(() => map.setLayerZoomRange(id, range.minzoom ?? 0, range.maxzoom ?? 24));
+		untrack(() => {
+			const before = addedWith;
+			const unset =
+				(before.minzoom !== undefined && next.minzoom === undefined) ||
+				(before.maxzoom !== undefined && next.maxzoom === undefined);
+			if (
+				unset ||
+				next.sourceLayer !== before.sourceLayer ||
+				!deepEqual(before.metadata, next.metadata)
+			) {
+				revision += 1;
+				return;
+			}
+			if (next.minzoom === before.minzoom && next.maxzoom === before.maxzoom) return;
+
+			// Typed as numbers, but `undefined` is what leaves a bound alone.
+			map.setLayerZoomRange(id, next.minzoom as number, next.maxzoom as number);
+			addedWith = { ...before, minzoom: next.minzoom, maxzoom: next.maxzoom };
+		});
 	});
 
 	bindLayerEvents(
