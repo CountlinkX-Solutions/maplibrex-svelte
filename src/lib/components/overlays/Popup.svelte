@@ -55,10 +55,23 @@
 
 	let content = $state<HTMLDivElement | null>(null);
 
+	// Plain variables, not state: a teardown reads reactive values as they were
+	// before the change that triggered it, so it cannot tell a rebuild from an
+	// unmount through `recreateKey` itself.
+	let latestKey = '';
+	let rebuilding = false;
+	let reopenOnMarker = false;
+
+	// Pre-effects run before the effect below re-runs, so its teardown sees the
+	// new key here when a constructor-only prop changed.
+	$effect.pre(() => {
+		latestKey = recreateKey;
+	});
+
 	$effect(() => {
 		const map = context.map;
 		const node = content;
-		void recreateKey;
+		const key = recreateKey;
 
 		if (!map || !node) return;
 
@@ -80,8 +93,17 @@
 		popup = instance;
 
 		return () => {
+			// A rebuild must not look like a close: the old popup's `close` is not
+			// reported, and an open popup stays open in its replacement. An unmount
+			// or a new map leaves the key as it was and still reports the close.
+			rebuilding = latestKey !== key;
+			reopenOnMarker = rebuilding && attachedToMarker && instance.isOpen();
 			popup = null;
-			instance.remove();
+			try {
+				instance.remove();
+			} finally {
+				rebuilding = false;
+			}
 		};
 	});
 
@@ -93,6 +115,13 @@
 		if (!marker || !instance) return;
 
 		marker.setPopup(instance);
+
+		// A standalone replacement is reopened by the `open` effect below; an
+		// attached one only opens through its marker.
+		if (reopenOnMarker) {
+			reopenOnMarker = false;
+			untrack(() => marker.togglePopup());
+		}
 
 		return () => marker.setPopup(null);
 	});
@@ -132,7 +161,7 @@
 				open = true;
 			}),
 			instance.on('close', () => {
-				open = false;
+				if (!rebuilding) open = false;
 			})
 		];
 

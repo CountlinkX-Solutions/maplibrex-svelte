@@ -1099,7 +1099,8 @@ export const COMPONENTS: ComponentDoc[] = [
 		bindings: ['open', 'popup'],
 		notes: [
 			'Nested inside a Marker, the marker handles open and close on click. Standalone, the open prop drives it.',
-			'bind:open stays truthful after a close button click or a closeOnClick, because the popup reports its own state back.'
+			'bind:open stays truthful after a close button click or a closeOnClick, because the popup reports its own state back.',
+			'closeButton, closeOnClick, closeOnMove, focusAfterOpen, anchor, className and locationOccludedOpacity have no setter upstream, so changing one builds a new popup. An open popup stays open, and bind:open does not change.'
 		],
 		examples: [
 			'Display a popup',
