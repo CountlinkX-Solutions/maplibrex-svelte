@@ -17,13 +17,19 @@ const REGISTRY_CONTEXT = Symbol.for('maplibrex.registry');
 export interface MapContext {
 	/** The live instance, or `null` before mount and after teardown. */
 	readonly map: MapLibreMap | null;
-	/** `true` once the style is loaded and sources/layers can be added. */
+	/**
+	 * `true` from the map's first `load` until the map is removed. It stays
+	 * `true` while a new style loads or after one failed to, when the style
+	 * takes no sources, layers or setters: code that adds them by hand waits
+	 * for `styleEpoch` to move on after a swap.
+	 */
 	readonly ready: boolean;
 	/**
 	 * Increments on every completed style load, including a style swap. A swap
-	 * drops everything added to the previous style; sources, layers, terrain
-	 * and feature state are put back by the library, and anything a descendant
-	 * adds by hand can track this to add it again.
+	 * drops everything added to the previous style; sources, layers, terrain,
+	 * feature state and the other style components are put back by the
+	 * library, and anything a descendant adds by hand can track this to add
+	 * it again.
 	 */
 	readonly styleEpoch: number;
 }

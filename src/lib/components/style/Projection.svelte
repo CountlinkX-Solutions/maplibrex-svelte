@@ -1,31 +1,18 @@
 <script lang="ts">
 	import type { ProjectionSpecification } from 'maplibre-gl';
-	import { untrack } from 'svelte';
-	import { getMapContext } from '../../context.js';
-	import { deepEqual } from '../../internal/deep-equal.js';
-	import { isStyleAlive } from '../../internal/style-ops.js';
+	import { holdStyleState } from '../../internal/style-state.svelte.js';
 
 	type Props = ProjectionSpecification;
 
 	let projection: Props = $props();
 
-	const context = getMapContext();
-
-	$effect(() => {
-		const map = context.map;
-		const ready = context.ready;
-		void context.styleEpoch;
-		const next = { ...projection };
-
-		if (!map || !ready) return;
-
-		const previous = untrack(() => map.getProjection());
-		if (deepEqual(previous, next)) return;
-
-		map.setProjection(next);
-
-		return () => {
-			if (isStyleAlive(map)) map.setProjection(previous);
-		};
+	// Unmounting puts back the projection of the style shown at that moment,
+	// including none: a style that declares no projection reports `undefined`.
+	holdStyleState({
+		name: '<Projection>',
+		value: () => ({ ...projection }),
+		snapshot: (map) => map.getProjection(),
+		write: (map, next) => map.setProjection(next),
+		restore: (map, previous) => map.setProjection(previous)
 	});
 </script>

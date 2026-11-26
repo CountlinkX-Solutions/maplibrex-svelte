@@ -1231,6 +1231,7 @@ export const COMPONENTS: ComponentDoc[] = [
 		],
 		notes: [
 			'Unmounting restores what the style declared.',
+			'Waits for a style that can take it: mounted while a new style loads, or after one failed, it is applied once a style has loaded, and again after every style swap.',
 			'Like terrain, the sky is only visible with pitch. Straight down, there is no horizon to paint.'
 		],
 		examples: ['Sky, Fog, Terrain', 'Display a globe with an atmosphere'],
@@ -1264,6 +1265,7 @@ export const COMPONENTS: ComponentDoc[] = [
 		],
 		notes: [
 			'Unmounting restores what the style declared.',
+			'Waits for a style that can take it: mounted while a new style loads, or after one failed, it is applied once a style has loaded, and again after every style swap.',
 			'Only visible on layers that respond to light: fill-extrusion and hillshade. On anything else it is set and has no effect.',
 			"anchor decides what the light is fixed to. 'map' keeps it over the same ground as you rotate; 'viewport' keeps it over the same corner of the screen.",
 			'position is [radial, azimuthal, polar]: distance, the angle around, and the angle down from straight overhead.'
@@ -1286,6 +1288,7 @@ export const COMPONENTS: ComponentDoc[] = [
 		],
 		notes: [
 			'Unmounting restores what the style declared. A style that declares no projection reports none, and that absence is what comes back.',
+			'Waits for a style that can take it: mounted while a new style loads, or after one failed, it is applied once a style has loaded, and again after every style swap.',
 			'For a visitor-facing toggle, GlobeControl does the same thing as a button.'
 		],
 		examples: ['Display a globe with a vector map', 'Zoom and planet size relation on globe'],
@@ -1379,6 +1382,7 @@ export const COMPONENTS: ComponentDoc[] = [
 		notes: [
 			'Values are pushed by diff, so changing one property does not touch the others.',
 			'Unmounting puts the style’s own values back.',
+			'Waits for a style that can take it: mounted while a new style loads, or after one failed, it is applied once a style has loaded, and again after every style swap.',
 			'A style may declare a state block giving each name a default, so expressions resolve before any value is pushed. It is optional — the expression works without it, you just start from undefined.',
 			'This is what saves threading one value through every layer that needs it: set it once, and every expression mentioning the name sees it.'
 		],
