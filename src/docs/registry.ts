@@ -268,7 +268,7 @@ export const COMPONENTS: ComponentDoc[] = [
 			'Toggle interactions',
 			'Restrict map panning to an area'
 		],
-		demo: 'basic-map'
+		demo: 'map-status'
 	},
 
 	// Controls -------------------------------------------------------------
