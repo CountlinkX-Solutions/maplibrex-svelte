@@ -10,6 +10,10 @@ import MarkerPopupStack from './fixtures/MarkerPopupStack.svelte';
  * Removing the old one fired `close` while the listener was still attached,
  * which wrote `open = false` back and left the new popup closed. A rebuild is
  * an implementation detail and must not look like the user closing the popup.
+ *
+ * Also covers issue #42: options the consumer did not set must keep MapLibre's
+ * defaults. The fixtures set none of `closeButton`, `closeOnClick` and
+ * `focusAfterOpen`, so every user-close test below relies on those defaults.
  */
 
 const WAIT = { timeout: 15_000 } as const;
@@ -95,6 +99,34 @@ describe('standalone popup', () => {
 		await vi.waitFor(() => {
 			expect(open()).toBe(false);
 			expect(popupWithClass(map, 'second')).toBeNull();
+		}, SETTLE);
+	});
+});
+
+describe('options left unset', () => {
+	it('shows a close button and takes focus, as MapLibre does by default', async () => {
+		const { map } = await mountPopup(PopupStack);
+		await vi.waitFor(() => expect(popupWithClass(map, 'first')).not.toBeNull(), WAIT);
+		const element = popupWithClass(map, 'first') as HTMLElement;
+
+		expect(element.querySelector('.maplibregl-popup-close-button')).not.toBeNull();
+		expect(element.contains(document.activeElement)).toBe(true);
+	});
+
+	it('closes on a map click, as MapLibre does by default', async () => {
+		const { map, open } = await mountPopup(PopupStack);
+		await vi.waitFor(() => expect(popupWithClass(map, 'first')).not.toBeNull(), WAIT);
+
+		// A click on the canvas corner, away from the popup in the middle.
+		const canvas = map.getCanvas();
+		const box = canvas.getBoundingClientRect();
+		canvas.dispatchEvent(
+			new MouseEvent('click', { bubbles: true, clientX: box.left + 5, clientY: box.top + 5 })
+		);
+
+		await vi.waitFor(() => {
+			expect(open()).toBe(false);
+			expect(popupWithClass(map, 'first')).toBeNull();
 		}, SETTLE);
 	});
 });

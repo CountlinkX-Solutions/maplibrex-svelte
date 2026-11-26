@@ -38,9 +38,9 @@
 	style="width: 400px; height: 300px"
 >
 	<!-- Attached: the marker opens the popup, `bind:open` only reports it.
-	     `closeButton` is explicit so the user-close test does not depend on a default. -->
+	     No closeButton: the user-close test relies on MapLibre's default. -->
 	<Marker lngLat={[0, 0]}>
-		<Popup {className} closeButton bind:open>
+		<Popup {className} bind:open>
 			<p data-testid="popup-content">Attached</p>
 		</Popup>
 	</Marker>

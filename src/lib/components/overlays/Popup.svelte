@@ -41,16 +41,22 @@
 	const markerContext = getMarkerContext();
 	const attachedToMarker = markerContext !== null;
 
-	// No setters exist for these, so a change means a new popup.
-	const constructorOnly = $derived({
-		closeButton: rest.closeButton,
-		closeOnClick: rest.closeOnClick,
-		closeOnMove: rest.closeOnMove,
-		focusAfterOpen: rest.focusAfterOpen,
-		anchor: rest.anchor,
-		className: rest.className,
-		locationOccludedOpacity: rest.locationOccludedOpacity
-	});
+	// No setters exist for these, so a change means a new popup. MapLibre copies
+	// every key it is given over its defaults, `undefined` included, so an option
+	// the consumer did not set is left out rather than passed as `undefined`.
+	const constructorOnly = $derived(
+		Object.fromEntries(
+			Object.entries({
+				closeButton: rest.closeButton,
+				closeOnClick: rest.closeOnClick,
+				closeOnMove: rest.closeOnMove,
+				focusAfterOpen: rest.focusAfterOpen,
+				anchor: rest.anchor,
+				className: rest.className,
+				locationOccludedOpacity: rest.locationOccludedOpacity
+			}).filter(([, value]) => value !== undefined)
+		) as PopupOptions
+	);
 	const recreateKey = $derived(stableKey(constructorOnly));
 
 	let content = $state<HTMLDivElement | null>(null);

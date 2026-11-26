@@ -1084,6 +1084,12 @@ export const COMPONENTS: ComponentDoc[] = [
 				description: 'Closes when the map moves.'
 			},
 			{
+				name: 'focusAfterOpen',
+				type: 'boolean',
+				default: 'true',
+				description: 'Moves focus to the first focusable element in the popup when it opens.'
+			},
+			{
 				name: 'anchor',
 				type: 'PositionAnchor',
 				description: 'Which edge points at the coordinate.'
