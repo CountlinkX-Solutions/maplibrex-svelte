@@ -10,7 +10,11 @@
 		sourceLayer?: string;
 		/** The feature id. Vector features need `promoteId` if their id is a property. */
 		id: string | number;
-		/** Read from style expressions through `["feature-state", key]`. */
+		/**
+		 * Read from style expressions through `["feature-state", key]`. Unmounting
+		 * removes these keys and no others, so several components can hold state
+		 * on the same feature.
+		 */
 		state: Record<string, unknown>;
 	};
 
@@ -47,10 +51,17 @@
 			...(sourceLayer ? { sourceLayer } : {})
 		};
 
-		untrack(() => map.setFeatureState(target, next));
+		const keys = untrack(() => {
+			map.setFeatureState(target, next);
+			return Object.keys(next);
+		});
 
+		// Only the keys set here: other components may hold state on the same
+		// feature, such as a selection alongside a hover. A key that leaves
+		// `state` is removed by this cleanup and not set again by the next run.
 		return () => {
-			if (isStyleAlive(map)) map.removeFeatureState(target);
+			if (!isStyleAlive(map)) return;
+			for (const key of keys) map.removeFeatureState(target, key);
 		};
 	});
 </script>
