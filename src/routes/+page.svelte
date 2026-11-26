@@ -49,9 +49,10 @@ ${CLOSE_SCRIPT}
 
 	const workerSetup = `import { setWorkerUrl } from 'maplibre-gl';
 
-// Both files must sit in the same directory: the worker
-// imports its shared chunk by relative path. Add your base
-// path in front if the app is not served from the root.
+// Before maplibre-gl 6.13 the worker imports a shared chunk
+// by relative path, so both files must sit in the same
+// directory. Add your base path in front if the app is not
+// served from the root.
 export function configureMapLibreWorker() {
   setWorkerUrl('/maplibre/maplibre-gl-worker.mjs');
 }`;
@@ -131,12 +132,13 @@ export function configureMapLibreWorker() {
 			every source renders as empty background because nothing parses tiles or GeoJSON.
 		</p>
 		<p>
-			Copy <code>maplibre-gl-worker.mjs</code> and <code>maplibre-gl-shared.mjs</code> from
-			<code>node_modules/maplibre-gl/dist</code> into one directory your app serves, and point MapLibre
-			at the copy before the first map is created.
+			Copy <code>maplibre-gl-worker.mjs</code> from <code>node_modules/maplibre-gl/dist</code> into
+			a directory your app serves, and point MapLibre at the copy before the first map is created.
+			On releases before 6.13, also copy <code>maplibre-gl-shared.mjs</code> into the same directory:
+			the worker imports it.
 		</p>
 		<p class="fineprint">
-			This site copies them with a small Vite plugin that reads both files from
+			This site copies them with a small Vite plugin that reads them from
 			<code>node_modules</code> at build time, so they always match the installed version:
 			<a
 				href="https://github.com/CountlinkX-Solutions/maplibrex-svelte/blob/main/vite-plugins/maplibre-worker.ts"

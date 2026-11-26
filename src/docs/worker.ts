@@ -1,4 +1,4 @@
-import { setWorkerUrl } from 'maplibre-gl';
+import { getVersion, setWorkerUrl } from 'maplibre-gl';
 import { asset } from '$app/paths';
 import type { AssetPath } from '$app/types';
 import { MAPLIBRE_WORKER_PATH } from '../../vite-plugins/maplibre-worker-paths.js';
@@ -21,7 +21,11 @@ export function configureMapLibreWorker(): void {
 	if (configured) return;
 
 	// `asset()` adds the base path. Its type lists only files in `static/`, and
-	// the worker is emitted by the plugin instead, hence the cast.
-	setWorkerUrl(asset(MAPLIBRE_WORKER_PATH.slice(1) as AssetPath));
+	// the worker is emitted by the plugin instead, hence the cast. The copy keeps
+	// the same name in every release, so the version query stops a browser from
+	// pairing a cached older worker with a newer main bundle, as MapLibre's own
+	// setup guide recommends for copied workers.
+	const url = asset(MAPLIBRE_WORKER_PATH.slice(1) as AssetPath);
+	setWorkerUrl(`${url}?v=${getVersion()}`);
 	configured = true;
 }
