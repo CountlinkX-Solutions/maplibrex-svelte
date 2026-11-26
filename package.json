@@ -1,6 +1,6 @@
 {
 	"name": "maplibrex-svelte",
-	"version": "0.1.1",
+	"version": "0.2.0",
 	"description": "Component-oriented Svelte 5 bindings for MapLibre GL JS, written in TypeScript.",
 	"license": "MIT",
 	"author": "Yendris Rogelio Cruz Mendoza",
