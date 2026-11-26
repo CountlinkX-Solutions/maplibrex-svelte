@@ -1369,7 +1369,8 @@ export const COMPONENTS: ComponentDoc[] = [
 			}
 		],
 		notes: [
-			'Unmounting clears the state, so there is never a setFeatureState left without its matching removeFeatureState.',
+			'Unmounting removes the keys it set, so there is never a setFeatureState left without its matching removeFeatureState.',
+			'Only its own keys are removed, on unmount and when a key leaves state, so a hover and a selection on the same feature can be two components.',
 			'Features need ids. GeoJSON features can carry an id directly, or map a property with promoteId on the source.'
 		],
 		examples: ['Create a hover effect', 'Get features under the mouse pointer'],

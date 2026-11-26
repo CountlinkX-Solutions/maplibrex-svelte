@@ -175,7 +175,8 @@
 	);
 </script>
 
-<div style="display: none" aria-hidden="true">
+<!-- `hidden`, not an inline style: a strict CSP blocks style attributes. -->
+<div hidden aria-hidden="true">
 	<div bind:this={content}>
 		{#if popup}
 			{@render children?.({ popup })}

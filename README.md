@@ -204,7 +204,7 @@ Terrain, sky, light and projection are properties of the style rather than entri
 
 ### Data
 
-`<FeatureState>` makes hover and selection declarative. Mount it while a feature is active; unmounting clears the state, so there is no `setFeatureState` left without its matching `removeFeatureState`:
+`<FeatureState>` makes hover and selection declarative. Mount it while a feature is active; unmounting removes the keys it set, so there is no `setFeatureState` left without its matching `removeFeatureState`. It removes only its own keys, so a hover and a selection on the same feature can be two components that come and go independently:
 
 ```svelte
 <GeoJSONSource id="counties" data={counties}>
