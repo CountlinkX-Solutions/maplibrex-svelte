@@ -14,6 +14,10 @@
 
 	const context = getMapContext();
 
+	// Read through `$derived`, which passes on only a new value: replacing a
+	// spread props object with an equal one must not add the control anew.
+	const stablePosition = $derived(position);
+
 	let content = $state<HTMLDivElement | null>(null);
 
 	// The snippet is rendered into a hidden holder and MapLibre relocates that
@@ -22,7 +26,7 @@
 	$effect(() => {
 		const map = context.map;
 		const node = content;
-		const at = position;
+		const at = stablePosition;
 
 		if (!map || !node) return;
 

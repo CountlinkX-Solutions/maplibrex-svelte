@@ -21,6 +21,11 @@
 	const sourceContext = getSourceContext();
 	const registry = getStyleRegistry();
 	const resolvedSource = $derived(source ?? sourceContext?.id);
+	// Read through `$derived`, which passes on only a new value: replacing a
+	// spread props object with an equal one must not set the state anew.
+	const stableSourceLayer = $derived(sourceLayer);
+	const stableId = $derived(id);
+	const stableState = $derived(state);
 
 	// Declarative hover and selection: mount the component while a feature is
 	// active and remove it when it is not, instead of pairing every
@@ -29,8 +34,9 @@
 	// the style and again whenever the source is added anew.
 	$effect(() => {
 		const sourceId = resolvedSource;
-		const featureId = id;
-		const next = state;
+		const sourceLayerId = stableSourceLayer;
+		const featureId = stableId;
+		const next = stableState;
 
 		if (!sourceId) {
 			throw new Error(
@@ -41,7 +47,7 @@
 		const target = {
 			source: sourceId,
 			id: featureId,
-			...(sourceLayer ? { sourceLayer } : {})
+			...(sourceLayerId ? { sourceLayer: sourceLayerId } : {})
 		};
 		let keys: string[] = [];
 

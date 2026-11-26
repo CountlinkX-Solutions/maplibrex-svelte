@@ -45,6 +45,11 @@
 	// the image anew. Compared by value: arrays such as `stretchX` are often
 	// written inline and are new on every render.
 	const metadataKey = $derived(stableKey(metadata));
+	// Read through `$derived`, which passes on only a new value: replacing a
+	// spread props object with an equal one must not register the image anew.
+	const stableId = $derived(id);
+	const stableImage = $derived(image);
+	const stableUrl = $derived(url);
 
 	// A style swap drops registered images along with everything else, so this
 	// tracks the style epoch like sources and layers do.
@@ -54,9 +59,9 @@
 		void context.styleEpoch;
 		void metadataKey;
 
-		const imageId = id;
-		const source = image;
-		const href = url;
+		const imageId = stableId;
+		const source = stableImage;
+		const href = stableUrl;
 
 		if (!map || !ready) return;
 

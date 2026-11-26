@@ -69,7 +69,19 @@
 	// unmount through `recreateKey` itself.
 	let latestKey = '';
 	let rebuilding = false;
-	let reopenOnMarker = false;
+	/** A rebuild replaced a popup that was open, so the replacement opens. */
+	let reopen = false;
+	/** The replacement is opening, which is not an open for the consumer. */
+	let reopening = false;
+
+	function asReopen(action: () => unknown): void {
+		reopening = true;
+		try {
+			action();
+		} finally {
+			reopening = false;
+		}
+	}
 
 	// Pre-effects run before the effect below re-runs, so its teardown sees the
 	// new key here when a constructor-only prop changed.
@@ -107,7 +119,7 @@
 			// reported, and an open popup stays open in its replacement. An unmount
 			// or a new map leaves the key as it was and still reports the close.
 			rebuilding = latestKey !== key;
-			reopenOnMarker = rebuilding && attachedToMarker && instance.isOpen();
+			reopen = rebuilding && instance.isOpen();
 			popup = null;
 			try {
 				instance.remove();
@@ -116,6 +128,16 @@
 			}
 		};
 	});
+
+	// What a rebuild does is not the consumer's business: the old popup did not
+	// close for them, and its replacement did not open for them. Every other
+	// `open` reaches them, the first one included: the popup is opened only
+	// once their handlers listen on it.
+	const listeners = bindEvents(
+		() => popup,
+		() => rest,
+		(name) => !(name === 'close' && rebuilding) && !(name === 'open' && reopening)
+	);
 
 	// Attaching to a marker delegates open/close to the marker's own click
 	// handling, which is why the two modes are wired differently below.
@@ -128,9 +150,9 @@
 
 		// A standalone replacement is reopened by the `open` effect below; an
 		// attached one only opens through its marker.
-		if (reopenOnMarker) {
-			reopenOnMarker = false;
-			untrack(() => marker.togglePopup());
+		if (reopen) {
+			reopen = false;
+			untrack(() => asReopen(() => marker.togglePopup()));
 		}
 
 		return () => marker.setPopup(null);
@@ -150,13 +172,18 @@
 		const map = context.map;
 		const instance = popup;
 		const shouldOpen = open;
+		const listening = listeners.target === instance;
 
-		if (!map || !instance || attachedToMarker) return;
+		if (!map || !instance || attachedToMarker || !listening) return;
+
+		const replacing = reopen;
+		reopen = false;
 		if (shouldOpen === instance.isOpen()) return;
 
 		untrack(() => {
-			if (shouldOpen) instance.addTo(map);
-			else instance.remove();
+			if (!shouldOpen) instance.remove();
+			else if (replacing) asReopen(() => instance.addTo(map));
+			else instance.addTo(map);
 		});
 	});
 
@@ -227,14 +254,6 @@
 			for (const name of classNames(next)) instance.addClassName(name);
 		});
 	});
-
-	// The old popup's `close` during a rebuild is not the consumer's business:
-	// the popup did not close for them.
-	bindEvents(
-		() => popup,
-		() => rest,
-		(name) => !(name === 'close' && rebuilding)
-	);
 </script>
 
 <!-- `hidden`, not an inline style: a strict CSP blocks style attributes. -->

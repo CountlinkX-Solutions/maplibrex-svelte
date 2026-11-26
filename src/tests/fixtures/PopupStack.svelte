@@ -14,12 +14,28 @@
 		popupAnchor?: PositionAnchor;
 		/** Passed to the popup as its `onclose` handler. */
 		onclose?: () => void;
+		/** Passed to the popup as its `onopen` handler. */
+		onopen?: () => void;
+		/**
+		 * Given, opens the popup through `bind:open`, as an app does after the
+		 * user closed it. Every rerender re-reads it, so a test passes it only
+		 * to open the popup again.
+		 */
+		reopen?: number;
 		/** Reports every value `bind:open` takes, so the test can read it back. */
 		onopenchange?: (open: boolean) => void;
 		onmapready?: (map: MapLibreMap) => void;
 	};
 
-	let { className = 'first', popupAnchor, onclose, onopenchange, onmapready }: Props = $props();
+	let {
+		className = 'first',
+		popupAnchor,
+		onclose,
+		onopen,
+		reopen,
+		onopenchange,
+		onmapready
+	}: Props = $props();
 
 	let map = $state<MapLibreMap | null>(null);
 	let ready = $state(false);
@@ -29,6 +45,10 @@
 
 	$effect(() => {
 		onopenchange?.(open);
+	});
+
+	$effect(() => {
+		if (reopen !== undefined) open = true;
 	});
 
 	$effect(() => {
@@ -45,7 +65,7 @@
 	style="width: 400px; height: 300px"
 >
 	<!-- No closeButton, closeOnClick or focusAfterOpen: the tests rely on MapLibre's defaults. -->
-	<Popup lngLat={[0, 0]} {className} anchor={popupAnchor} {onclose} bind:open>
+	<Popup lngLat={[0, 0]} {className} anchor={popupAnchor} {onclose} {onopen} bind:open>
 		<p data-testid="popup-content">Standalone</p>
 	</Popup>
 </MapLibre>

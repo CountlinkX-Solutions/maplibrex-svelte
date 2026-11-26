@@ -28,14 +28,20 @@ function keySetOf(handlers: Record<string, EventHandler>): string {
  * `deliver` is asked at the time of each event whether it reaches the
  * handler, for events the component causes itself and keeps from the
  * consumer, such as the `close` of a popup it replaces.
+ *
+ * The returned `target` is the one the handlers listen on, or `null`. The
+ * order in which Svelte runs a component's effects is not something to rely
+ * on, so a component whose own effect makes the target fire, as opening a
+ * popup does, waits for it to be the target it is about to act on.
  */
 export function bindEvents(
 	getTarget: () => EventSource | null | undefined,
 	getProps: () => Record<string, unknown>,
 	deliver: (name: string) => boolean = () => true
-): void {
+): { readonly target: EventSource | null } {
 	const handlers = $derived(pickEventHandlers(getProps()));
 	const names = $derived(keySetOf(handlers));
+	let listening = $state<EventSource | null>(null);
 
 	$effect(() => {
 		const target = getTarget();
@@ -52,11 +58,19 @@ export function bindEvents(
 				)
 			)
 		);
+		listening = target;
 
 		return () => {
+			listening = null;
 			for (const subscription of subscriptions) subscription.unsubscribe();
 		};
 	});
+
+	return {
+		get target() {
+			return listening;
+		}
+	};
 }
 
 /**

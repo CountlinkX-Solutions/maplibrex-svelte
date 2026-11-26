@@ -24,6 +24,9 @@ Sources, layers and style-level state now follow the component tree reliably, an
 - Each camera prop keeps its own target until the map gets there. Setting `zoom` and then `center` during an animation no longer stops at an intermediate zoom (#18).
 - Props that were read once now react, including being unset: `sourceLayer`, `metadata`, `minzoom` and `maxzoom` on layers; `padding` on the map; the optional settings of `<Marker>` and `<Popup>`; the metadata of `<Image>` (#20).
 - A popup that is rebuilt because a constructor-only prop changed no longer calls `onclose`, and `className` changes without a rebuild (#43).
+- Unmounting `<Light>` or `<Sky>` on a style that declares no light or sky, or only part of what the component set, no longer leaves the component's values on the map. What the style does not declare goes back to MapLibre's default (#60).
+- Replacing a props object spread into a component, as in `<Layer {...props} />`, with one that holds the same values no longer takes the layer out of the style and adds it again. The same goes for custom layers, sources, `<FeatureState>`, `<Image>` and controls (#61).
+- `onopen` on `<Popup>` is called for the first open of a popup that starts open, and no longer for the replacement a rebuild opens in its place (#62).
 
 ### Changed
 

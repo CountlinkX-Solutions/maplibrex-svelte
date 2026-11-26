@@ -28,6 +28,10 @@
 
 	const context = getMapContext();
 	const registry = getStyleRegistry();
+	// Read through `$derived`, which passes on only a new value: replacing a
+	// spread props object with an equal one must not add the source anew,
+	// which would take every layer that reads it out and back in.
+	const stableId = $derived(id);
 
 	let epoch = $state(0);
 	/** In the style now. */
@@ -54,7 +58,7 @@
 	// and again after a style swap drops it. It takes the layers and other
 	// state that read the source out before removing it.
 	$effect(() => {
-		const sourceId = id;
+		const sourceId = stableId;
 
 		const current = registry.addSource({
 			id: sourceId,
