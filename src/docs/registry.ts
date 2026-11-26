@@ -563,7 +563,7 @@ export const COMPONENTS: ComponentDoc[] = [
 			SOURCE_CHILDREN_PROP
 		],
 		notes: [
-			'A data change calls setData and keeps the source alive. Any other change has no setter upstream and recreates the source, which takes its layers down and puts them back.',
+			'A data change calls setData, and a change to cluster, clusterRadius or clusterMaxZoom calls setClusterOptions; both keep the source and its layers. Unsetting clusterRadius or clusterMaxZoom, changing data and cluster options at once, or changing any other option recreates the source, which takes its layers out and puts them back where they were.',
 			'data is compared by reference and never walked, so replace it rather than mutate it. A new object calls setData even when it is equal to the old one. A mutation in place, such as features.push on a $state object, keeps the reference and never reaches the map; $state.raw suits data you replace.',
 			'Feature state needs feature ids. Set them on the features, or map a property with promoteId.'
 		],
@@ -597,7 +597,10 @@ export const COMPONENTS: ComponentDoc[] = [
 			{ name: 'promoteId', type: 'string', description: 'Uses a property as the feature id.' },
 			SOURCE_CHILDREN_PROP
 		],
-		notes: ['Layers on a vector source almost always need sourceLayer.'],
+		notes: [
+			'Layers on a vector source almost always need sourceLayer.',
+			'Changing tiles calls setTiles and changing url calls setUrl, which keep the source and its layers. Changing both at once, removing one, or changing any other option recreates the source, which takes its layers out and puts them back where they were.'
+		],
 		examples: ['Add a vector tile source', 'PMTiles source and protocol'],
 		demo: 'source-vector'
 	},
@@ -636,6 +639,9 @@ export const COMPONENTS: ComponentDoc[] = [
 			{ name: 'attribution', type: 'string', description: 'Shown by the attribution control.' },
 			SOURCE_CHILDREN_PROP
 		],
+		notes: [
+			'Changing tiles calls setTiles and changing url calls setUrl, which keep the source and its layers. Changing both at once, removing one, or changing any other option recreates the source, which takes its layers out and puts them back where they were.'
+		],
 		examples: ['Add a raster tile source', 'Add a WMS source', 'Add a COG raster source'],
 		demo: 'source-raster'
 	},
@@ -670,7 +676,8 @@ export const COMPONENTS: ComponentDoc[] = [
 		notes: [
 			'Terrain and Hillshade nested here inherit this source id, and both can read the same source at once.',
 			'Only Terrain changes the height of the ground. HillshadeLayer has a paint property called hillshade-exaggeration, but it deepens the shading and moves nothing — the name misleads almost everyone the first time.',
-			'Getting encoding wrong does not fail. Let the TileJSON declare it when it can.'
+			'Getting encoding wrong does not fail. Let the TileJSON declare it when it can.',
+			'Changing tiles calls setTiles and changing url calls setUrl, which keep the source and its layers. Changing both at once, removing one, or changing any other option recreates the source, which takes its layers out and puts them back where they were.'
 		],
 		examples: ['3D Terrain', 'Add a hillshade layer', 'Add a color relief layer'],
 		demo: 'source-raster-dem'
@@ -697,6 +704,9 @@ export const COMPONENTS: ComponentDoc[] = [
 				description: 'Corners in clockwise order, starting top-left.'
 			},
 			SOURCE_CHILDREN_PROP
+		],
+		notes: [
+			'Changing coordinates calls setCoordinates, and changing url calls updateImage, with the new coordinates if they changed too; both keep the source and its layers. Removing url recreates the source.'
 		],
 		examples: ['Animate a series of images'],
 		demo: 'source-image'
@@ -728,6 +738,9 @@ export const COMPONENTS: ComponentDoc[] = [
 				description: 'Corners in clockwise order, starting top-left.'
 			},
 			SOURCE_CHILDREN_PROP
+		],
+		notes: [
+			'Changing coordinates calls setCoordinates, which keeps the source and its layers. Changing urls recreates the source.'
 		],
 		examples: ['Add a video'],
 		demo: 'source-video'
@@ -761,6 +774,9 @@ export const COMPONENTS: ComponentDoc[] = [
 				description: 'Re-reads the canvas every frame. Turn it off for a static drawing.'
 			},
 			SOURCE_CHILDREN_PROP
+		],
+		notes: [
+			'Changing coordinates calls setCoordinates, which keeps the source and its layers. Changing canvas or animate recreates the source.'
 		],
 		examples: ['Add a canvas source'],
 		demo: 'source-canvas'

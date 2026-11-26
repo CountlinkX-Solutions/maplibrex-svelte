@@ -1,9 +1,19 @@
 <script lang="ts">
-	import type { GeoJSONSource } from 'maplibre-gl';
+	import type {
+		GeoJSONSource,
+		ImageSource,
+		Map as MapLibreMap,
+		RasterTileSource,
+		VectorTileSource
+	} from 'maplibre-gl';
 	import { untrack, type Snippet } from 'svelte';
 	import { getMapContext, getStyleRegistry, setSourceContext } from '../../context.js';
 	import type { SourceRegistration } from '../../internal/registry.js';
-	import { planSourceUpdate, type AnySourceSpecification } from '../../internal/source.js';
+	import {
+		planSourceUpdate,
+		type AnySourceSpecification,
+		type SourceUpdatePlan
+	} from '../../internal/source.js';
 	import { removeLayersUsingSource, removeSourceIfPresent } from '../../internal/style-ops.js';
 
 	type Props = {
@@ -76,8 +86,44 @@
 		};
 	});
 
-	// Update in place. GeoJSON data is the hot path and survives via `setData`;
-	// anything else has no setter in MapLibre and forces a recreate.
+	/**
+	 * Runs the setter `plan` names on the source in the style. Returns `false`
+	 * when there is none to run, which leaves a recreate.
+	 */
+	function updateInPlace(map: MapLibreMap, plan: SourceUpdatePlan): boolean {
+		const source = map.getSource(id);
+		if (!source) return false;
+
+		switch (plan.kind) {
+			case 'set-data':
+				(source as GeoJSONSource).setData(plan.data as Parameters<GeoJSONSource['setData']>[0]);
+				return true;
+			case 'set-cluster-options':
+				(source as GeoJSONSource).setClusterOptions(plan.options);
+				return true;
+			case 'set-tiles':
+				(source as VectorTileSource | RasterTileSource).setTiles(plan.tiles);
+				return true;
+			case 'set-url':
+				(source as VectorTileSource | RasterTileSource).setUrl(plan.url);
+				return true;
+			case 'set-coordinates':
+				(source as ImageSource).setCoordinates(plan.coordinates);
+				return true;
+			case 'update-image':
+				(source as ImageSource).updateImage({
+					url: plan.url,
+					...(plan.coordinates ? { coordinates: plan.coordinates } : {})
+				});
+				return true;
+			default:
+				return false;
+		}
+	}
+
+	// Update in place where MapLibre has a setter for the change, which keeps
+	// the source's tiles and every layer that reads it. Anything else is a
+	// recreate.
 	$effect(() => {
 		const map = context.map;
 		const nextSpec = spec;
@@ -87,9 +133,7 @@
 		if (plan.kind === 'noop' || plan.kind === 'create') return;
 
 		untrack(() => {
-			if (plan.kind === 'set-data') {
-				const source = map.getSource(id) as GeoJSONSource | undefined;
-				source?.setData(plan.data as Parameters<GeoJSONSource['setData']>[0]);
+			if (updateInPlace(map, plan)) {
 				applied = nextSpec;
 				return;
 			}

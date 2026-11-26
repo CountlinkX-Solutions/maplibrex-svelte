@@ -294,3 +294,15 @@ export function flatDemTiles(): string[] {
 	const scheme = registerScheme(async () => ({ data: (await flatTile)!.slice(0) }));
 	return [`${scheme}://{z}/{x}/{y}`];
 }
+
+/** An image URL that serves the 256-pixel PNG of {@link flatDemTiles}. */
+export function pngUrl(): string {
+	const [template] = flatDemTiles();
+	return template.replace('{z}/{x}/{y}', 'image.png');
+}
+
+/** A TileJSON URL that lists `tiles`, served without touching the network. */
+export function tileJsonUrl(tiles: string[]): string {
+	const scheme = registerScheme(async () => ({ data: { tilejson: '3.0.0', tiles } }));
+	return `${scheme}://tiles.json`;
+}
