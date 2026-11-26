@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render } from 'vitest-browser-svelte';
 import type { Map as MapLibreMap } from 'maplibre-gl';
+import MapLibre from '#lib/components/MapLibre.svelte';
 import MapStack from './fixtures/MapStack.svelte';
 
 /**
@@ -90,5 +91,24 @@ describe('map lifecycle', () => {
 		await screen.unmount();
 
 		await vi.waitFor(() => expect(container.children).toHaveLength(0), WAIT);
+	});
+});
+
+describe('map container', () => {
+	// The container's `class` is an array, which Svelte supports from 5.16.
+	// Earlier releases turn it into one comma-joined token, so neither class
+	// applies. This is the check that fails when the `svelte` peer floor is
+	// set below what the code needs.
+	it('keeps its own class next to the one passed in', async () => {
+		const screen = await render(MapLibre, {
+			mapStyle: { version: 8, sources: {}, layers: [] },
+			class: 'custom-map'
+		});
+
+		const container = screen.container.querySelector('[data-maplibrex="map"]');
+
+		expect([...(container?.classList ?? [])]).toEqual(
+			expect.arrayContaining(['maplibrex-map', 'custom-map'])
+		);
 	});
 });

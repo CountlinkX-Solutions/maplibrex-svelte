@@ -52,3 +52,48 @@ jobs:
       # Builds the distributable and validates the published surface with publint.
       - name: Package
         run: npm run prepack
+
+  # `verify` tests the locked svelte and maplibre-gl. This job tests the oldest
+  # and the newest releases the peer ranges in package.json allow.
+  peers:
+    name: Test (${{ matrix.peers }} peer versions)
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        peers: [floor, latest]
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # `floor` strips the caret from each peer range, `latest` passes the range
+      # as is, and npm picks the newest release inside it. npm deletes the
+      # TypeScript config SvelteKit generated in node_modules/$app, and SvelteKit
+      # cannot regenerate it on the floor Svelte, so a copy is put back.
+      - name: Install the ${{ matrix.peers }} peer versions
+        env:
+          PEERS: ${{ matrix.peers }}
+        run: |
+          spec() {
+            range=$(node -p "require('./package.json').peerDependencies['$1']")
+            if [ "$PEERS" = floor ]; then echo "$1@${range#^}"; else echo "$1@$range"; fi
+          }
+          cp -r 'node_modules/$app' "$RUNNER_TEMP/kit-app"
+          npm install --no-save --ignore-scripts "$(spec svelte)" "$(spec maplibre-gl)"
+          rm -rf 'node_modules/$app' && cp -r "$RUNNER_TEMP/kit-app" 'node_modules/$app'
+          node -p "'svelte ' + require('svelte/package.json').version + ', maplibre-gl ' + require('maplibre-gl/package.json').version"
+
+      - name: Install Chromium for browser tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Test
+        run: npx vitest --run --config vitest.peers.config.ts
