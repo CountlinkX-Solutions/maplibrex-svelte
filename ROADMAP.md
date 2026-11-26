@@ -18,7 +18,7 @@ The audit read the code and did not run it. Every defect below starts with a fai
 
 ## Order of work
 
-Each release is a milestone. Fixes that change no public API go first, then the toolchain, then the core rework that most other fixes depend on, then features.
+Each release is a GitHub milestone with the same name. Fixes that change no public API go first, then the toolchain, then the core rework that most other fixes depend on, then features.
 
 ### 0.1.1 — Repairs that change no API
 
@@ -74,14 +74,14 @@ What the first consumer had to reach for the raw map to do.
 | Issue | Work |
 | --- | --- |
 | #5 | Reactive fit to bounds (a `<FitBounds>` component), with `absolutePadding`; `bounds` no longer undone by `center`/`zoom` |
-| #12 | Split into: click with the features under the point (including "nothing hit"), cluster expansion, a readable `bounds`, resize, box select |
+| #12 | Tracking issue, split into: click with the features under the point (#33), cluster expansion (#34), readable bounds and resize (#35), box select (#36) |
 | #19 | Incremental GeoJSON updates through `updateData` |
 | #32 | `transformStyle`, `globalState` option, `minZoom`/`maxZoom`/`maxBounds` as props, `dragRotate.around`, `zoomToUserAccuracy`, new style properties |
 | #23 | Controls keep MapLibre's default positions |
 | #29 | Accessible name for the map; keyboard-reachable custom markers |
 | #7 | Optional escaped-text mode for attribution |
 
-Layer interaction helpers belong here too and have no issue yet: hover cursor, managed hover state, and typed click and hover events that carry the features. They are the most common request in the neighbouring Svelte libraries.
+Layer interaction helpers belong here too (#37): hover cursor, managed hover state, and typed click and hover events that carry the features. They are the most common request in the neighbouring Svelte libraries.
 
 ### 0.5.0 — Integrations
 
@@ -90,10 +90,10 @@ Each ships as an optional entry or package with optional peers, so the main entr
 | Issue | Work |
 | --- | --- |
 | #31 | `<DeckOverlay>` on `@deck.gl/maplibre`, overlaid and interleaved |
-| — | PMTiles helper on top of `<Protocol>` (pmtiles 4.5) |
-| — | terra-draw component that keeps drawings across a style swap |
-| — | maplibre-contour helper (0.1.1 or later) |
-| — | Markers generated from GeoJSON, for many-marker cases |
+| #38 | PMTiles helper on top of `<Protocol>` (pmtiles 4.5) |
+| #39 | terra-draw component that keeps drawings across a style swap |
+| #40 | maplibre-contour helper (0.1.1 or later) |
+| #41 | Markers generated from GeoJSON, for many-marker cases |
 
 Watch, do not build yet: custom projections, `sparse` vector sources and custom-layer terrain draping, all still experimental upstream.
 
